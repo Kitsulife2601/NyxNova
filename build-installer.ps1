@@ -1,3 +1,9 @@
+param(
+    [string]$CertificatePath = $env:NYXNOVA_CERT_PATH,
+    [string]$CertificatePassword = $env:NYXNOVA_CERT_PASSWORD,
+    [string]$TimestampUrl = "http://timestamp.digicert.com"
+)
+
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -15,6 +21,28 @@ Write-Host "NyxNova Installer-Build startet..."
 Write-Host "Publish:" $publishDir
 Write-Host "Releases:" $releaseDir
 Write-Host "Version:" $packVersion
+
+$signParams = $null
+if (-not [string]::IsNullOrWhiteSpace($CertificatePath)) {
+    if (-not (Test-Path -LiteralPath $CertificatePath)) {
+        throw "Codesigning-Zertifikat wurde nicht gefunden: $CertificatePath"
+    }
+
+    $signtool = Get-Command signtool.exe -ErrorAction SilentlyContinue
+    if ($null -eq $signtool) {
+        throw "signtool.exe wurde nicht gefunden. Installiere das Windows SDK oder fuege signtool.exe zum PATH hinzu."
+    }
+
+    $signParams = "sign /f `"$CertificatePath`" /fd SHA256 /tr `"$TimestampUrl`" /td SHA256"
+    if (-not [string]::IsNullOrWhiteSpace($CertificatePassword)) {
+        $signParams += " /p `"$CertificatePassword`""
+    }
+
+    Write-Host "Codesigning aktiv:" $CertificatePath
+}
+else {
+    Write-Host "Codesigning ist aus: kein Zertifikat angegeben. Installer wird unsigniert gebaut." -ForegroundColor Yellow
+}
 
 if (Test-Path -LiteralPath $publishDir) {
     Remove-Item -LiteralPath $publishDir -Recurse -Force
@@ -34,20 +62,28 @@ else {
     Write-Host "Custom-CEF wurde nicht gefunden. Installer wird mit Standard-CEF gebaut." -ForegroundColor Yellow
 }
 
-vpk pack `
-    --packId "NyxNova" `
-    --packTitle "NyxNova Browser" `
-    --packAuthors "Kitsulife2601" `
-    --packVersion $packVersion `
-    --packDir $publishDir `
-    --mainExe "NovaBrowser.CefSharp.exe" `
-    --runtime "win-x64" `
-    --channel "beta" `
-    --outputDir $releaseDir `
-    --icon $iconFile `
-    --releaseNotes $notesFile `
-    --splashProgressColor "#B967FF" `
-    --shortcuts "Desktop,StartMenuRoot"
+$vpkArgs = @(
+    "pack",
+    "--packId", "NyxNova",
+    "--packTitle", "NyxNova Browser",
+    "--packAuthors", "Kitsulife2601",
+    "--packVersion", $packVersion,
+    "--packDir", $publishDir,
+    "--mainExe", "NovaBrowser.CefSharp.exe",
+    "--runtime", "win-x64",
+    "--channel", "beta",
+    "--outputDir", $releaseDir,
+    "--icon", $iconFile,
+    "--releaseNotes", $notesFile,
+    "--splashProgressColor", "#B967FF",
+    "--shortcuts", "Desktop,StartMenuRoot"
+)
+
+if ($signParams) {
+    $vpkArgs += @("--signParams", $signParams)
+}
+
+vpk @vpkArgs
 
 Write-Host ""
 Write-Host "Installer fertig:"
