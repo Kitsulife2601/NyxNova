@@ -12,6 +12,7 @@ $publishDir = Join-Path $projectRoot "installer\publish"
 $releaseDir = Join-Path $projectRoot "installer\Releases"
 $notesFile = Join-Path $projectRoot "BETA_RELEASE_NOTES.md"
 $iconFile = Join-Path $projectRoot "src\NovaBrowser.CefSharp\Assets\nyxnova-icon.ico"
+$splashImage = Join-Path $projectRoot "installer\assets\nyxnova-installer-splash.png"
 $version = [xml](Get-Content -LiteralPath $projectFile)
 $packVersion = $version.Project.PropertyGroup.Version
 $cefSource = "C:\cef-build\nova-cef-148\cef-148-codecs-win-x64"
@@ -74,6 +75,7 @@ $vpkArgs = @(
     "--channel", "beta",
     "--outputDir", $releaseDir,
     "--icon", $iconFile,
+    "--splashImage", $splashImage,
     "--releaseNotes", $notesFile,
     "--splashProgressColor", "#B967FF",
     "--shortcuts", "Desktop,StartMenuRoot"
