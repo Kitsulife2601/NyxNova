@@ -15,11 +15,18 @@ public partial class App : Application
     public static string DataRoot => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NovaBrowser.CefSharp");
     public static string LogsRoot => Path.Combine(DataRoot, "Logs");
     public static string CrashLogPath => Path.Combine(LogsRoot, "nova-crash.log");
+    private static string[] _startupArgs = [];
+
+    public static void SetStartupArgs(string[] args)
+    {
+        _startupArgs = args;
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {
         InstallCrashGuards();
-        StartupUrl = e.Args.FirstOrDefault(arg => Uri.TryCreate(arg, UriKind.Absolute, out var uri) &&
+        var args = _startupArgs.Length > 0 ? _startupArgs : e.Args;
+        StartupUrl = args.FirstOrDefault(arg => Uri.TryCreate(arg, UriKind.Absolute, out var uri) &&
                                                   (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == "nova" || uri.Scheme == "novabrowser"));
         ConfigureCulture();
         ConfigureCef();

@@ -13,6 +13,8 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using CefSharp;
+using Velopack;
+using Velopack.Sources;
 using NovaBrowser.App.Browser;
 using NovaBrowser.App.Models;
 using NovaBrowser.App.Services;
@@ -65,6 +67,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private const string ProtectionDisabledDomainsSettingsKey = "protection-disabled-domains";
     private int _findRequestId = 1;
     private readonly BrowserDiagnosticsState _diagnostics = new();
+    private readonly UpdateManager _updateManager = new(new GithubSource("https://github.com/Kitsulife2601/NyxNova", null, prerelease: true, downloader: null));
+    private UpdateInfo? _availableUpdate;
+    private VelopackAsset? _readyUpdate;
 
     public MainWindow() : this(false)
     {
@@ -120,6 +125,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public bool ExtensionsAllowedForCurrentSite { get; private set; } = true;
     public string UpdateStatusText { get; private set; } = "Beta-Update verfuegbar";
     public string UpdateDetailText { get; private set; } = "NyxNova Beta kann im Hintergrund vorbereitet werden.";
+    public string UpdateActionText { get; private set; } = "Update pruefen";
     public double UpdateProgress
     {
         get => _updateProgress;
@@ -187,6 +193,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(UpdateDetailText));
     }
 
+    private void SetUpdateAction(string text)
+    {
+        UpdateActionText = text;
+        OnPropertyChanged(nameof(UpdateActionText));
+    }
+
     private void OpenUpdatePage_Click(object sender, RoutedEventArgs e)
     {
         NavigateActive("nova://update");
@@ -202,21 +214,61 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         BetaUpdateBanner.Visibility = Visibility.Collapsed;
     }
 
-    private void StartBetaUpdate_Click(object sender, RoutedEventArgs e)
+    private async void StartBetaUpdate_Click(object sender, RoutedEventArgs e)
     {
         BetaUpdateBanner.Visibility = Visibility.Collapsed;
-        if (UpdateProgress >= 100)
+
+        try
         {
+            if (_readyUpdate is not null || _updateManager.UpdatePendingRestart is not null)
+            {
+                SetUpdateText("Update wird installiert", "NyxNova startet gleich neu und uebernimmt die geladene Version.");
+                SetUpdateAction("Installiere...");
+                _updateManager.ApplyUpdatesAndRestart(_readyUpdate ?? _updateManager.UpdatePendingRestart);
+                return;
+            }
+
+            NavigateActive("nova://update");
             UpdateProgress = 0;
-        }
+            SetUpdateAction("Pruefe...");
+            SetUpdateText("Update wird geprueft", "NyxNova sucht auf GitHub nach einer neuen Beta-Version.");
 
-        SetUpdateText("Beta-Update wird vorbereitet", "NyxNova laedt das Update im Hintergrund vor. Du kannst den Browser weiter benutzen.");
-        if (!_updateTimer.IsEnabled)
+            if (!_updateManager.IsInstalled)
+            {
+                SetUpdateAction("Installer noetig");
+                SetUpdateText("Installer erforderlich", "Automatische Updates funktionieren erst, wenn NyxNova ueber den Setup-Installer installiert wurde. Die portable EXE kann Updates nur anzeigen, nicht selbst anwenden.");
+                return;
+            }
+
+            _availableUpdate = await _updateManager.CheckForUpdatesAsync();
+            if (_availableUpdate is null)
+            {
+                UpdateProgress = 100;
+                SetUpdateAction("Erneut pruefen");
+                SetUpdateText("NyxNova ist aktuell", "Es wurde kein neueres GitHub-Release gefunden.");
+                return;
+            }
+
+            var target = _availableUpdate.TargetFullRelease;
+            SetUpdateAction("Laedt...");
+            SetUpdateText("Update gefunden", $"Version {target.Version} wird im Hintergrund heruntergeladen.");
+
+            await _updateManager.DownloadUpdatesAsync(_availableUpdate, progress =>
+            {
+                Dispatcher.Invoke(() => UpdateProgress = progress);
+            });
+
+            _readyUpdate = target;
+            UpdateProgress = 100;
+            SetUpdateAction("Neu starten und installieren");
+            SetUpdateText("Update bereit", "Das Update wurde heruntergeladen. Beim Neustart wird es wie bei einem normalen Browser-Update uebernommen.");
+        }
+        catch (Exception ex)
         {
-            _updateTimer.Start();
+            App.LogException("update-check-download", ex);
+            SetUpdateAction("Erneut versuchen");
+            SetUpdateText("Update konnte nicht geladen werden", "Bitte pruefe, ob auf GitHub ein Velopack-Release vorhanden ist. Details stehen im Nova-Log.");
         }
-
-        NavigateActive("nova://update");
     }
 
     private void UpdateTimer_Tick(object? sender, EventArgs e)
