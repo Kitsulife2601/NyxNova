@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Datenschutzerklärung für Novaaddon</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #070916;
+        --surface: rgba(13, 20, 42, 0.72);
+        --text: #edf8ff;
+        --muted: #9fb2c6;
+        --accent: #12e9ff;
+        --accent-2: #ff2352;
+        --line: rgba(113, 226, 255, 0.22);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 20% 10%, rgba(18, 233, 255, 0.16), transparent 28%),
+          radial-gradient(circle at 85% 80%, rgba(255, 35, 82, 0.13), transparent 30%),
+          linear-gradient(145deg, #070916, #100817);
+      }
+
+      main {
+        width: min(900px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 56px 0;
+      }
+
+      article {
+        padding: clamp(22px, 4vw, 42px);
+        border: 1px solid var(--line);
+        background: var(--surface);
+        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.34);
+        backdrop-filter: blur(18px);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(34px, 6vw, 56px);
+        line-height: 1;
+      }
+
+      h2 {
+        margin: 32px 0 10px;
+        color: #f7fdff;
+        font-size: 20px;
+      }
+
+      p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.65;
+      }
+
+      .date {
+        color: var(--accent);
+        font-weight: 800;
+      }
+
+      code {
+        color: #ffffff;
+        background: rgba(18, 233, 255, 0.11);
+        padding: 2px 6px;
+      }
+
+      a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <article>
+        <h1>Datenschutzerklärung für Novaaddon</h1>
+        <p class="date">Stand: 11. Juni 2026</p>
+        <p>Novaaddon ist eine Browser-Erweiterung, die den neuen Tab durch eine persönliche Startseite mit Uhr, Suche, Lesezeichen, Hintergrund, optionaler Webseiten-Übersetzung und optionaler Discord-Herz-Funktion ersetzt.</p>
+
+        <h2>Welche Daten verarbeitet werden</h2>
+        <p>Novaaddon speichert Einstellungen lokal im Browser, damit die Startseite beim nächsten Öffnen wieder gleich aussieht. Dazu gehören Uhr-Design, Schriftart, Hintergrundauswahl, eigene Lesezeichen, Übersetzungsoptionen und optional eine gespeicherte Discord-ID.</p>
+        <p>Wenn die automatische Webseiten-Übersetzung aktiviert ist, verarbeitet Novaaddon die URL der geöffneten Webseite, um diese Webseite über Google Translate zu öffnen. Novaaddon speichert keinen Browserverlauf und erstellt keine Besuchslisten.</p>
+        <p>Wenn die Discord-Herz-Funktion genutzt wird, kann eine Discord-ID lokal gespeichert und an einen lokal laufenden Bot-Server auf <code>127.0.0.1:8787</code> gesendet werden. Diese Funktion ist optional und funktioniert nur, wenn der Nutzer den lokalen Bot-Server selbst startet.</p>
+
+        <h2>Welche Daten nicht verarbeitet werden</h2>
+        <p>Novaaddon liest keine Webseiteninhalte aus. Es werden keine Texte, Bilder, Videos, Passwörter, Zahlungsdaten, Standortdaten, Gesundheitsdaten oder Finanzdaten gesammelt.</p>
+        <p>Novaaddon überwacht keine Mausbewegungen, Tastatureingaben, Scrollbewegungen oder sonstige Nutzeraktivitäten auf Webseiten.</p>
+
+        <h2>Weitergabe von Daten</h2>
+        <p>Novaaddon verkauft keine Nutzerdaten und gibt keine Nutzerdaten für Werbung, Profilbildung oder Kreditwürdigkeitsprüfungen weiter.</p>
+        <p>Bei aktivierter Übersetzung wird die aufgerufene Webseiten-URL an Google Translate übergeben, damit die Übersetzungsseite geöffnet werden kann.</p>
+        <p>Bei aktivierter Discord-Herz-Funktion werden die eingegebene Discord-ID und die Herz-Nachricht nur an den lokal laufenden Bot-Server auf dem eigenen Gerät gesendet.</p>
+
+        <h2>Speicherung</h2>
+        <p>Einstellungen werden lokal im Browser gespeichert. Eigene Hintergründe und eigene Lesezeichen können lokal im Browser gespeichert werden, damit sie auf der Startseite erhalten bleiben.</p>
+
+        <h2>Kontakt</h2>
+        <p>Bei Fragen zur Erweiterung oder zum Datenschutz kann der Publisher über die im Chrome Web Store angegebene Kontakt-E-Mail erreicht werden.</p>
+      </article>
+    </main>
+  </body>
+</html>

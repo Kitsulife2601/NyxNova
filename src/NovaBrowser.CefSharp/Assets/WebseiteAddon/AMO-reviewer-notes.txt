@@ -1,0 +1,7 @@
+No build step is required.
+
+This extension contains plain, readable HTML, CSS, and JavaScript files. The code is not minified, bundled, transpiled, obfuscated, or generated from templates.
+
+Static video assets were converted locally for browser compatibility, but no extension code is generated from a build process.
+
+The permissions "webNavigation", "tabs", "storage", and http/https host access are used only for the optional automatic translation feature. When the user enables it in the settings panel, top-level http/https page navigations are redirected to Google Translate with automatic source-language detection. Localhost, extension pages, and translate.google.com are skipped to avoid loops. The feature is off by default.

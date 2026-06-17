@@ -1,0 +1,38 @@
+<Window x:Class="NovaBrowser.App.UI.AddonPermissionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Nova Addon installieren"
+        Width="470"
+        Height="390"
+        WindowStartupLocation="CenterOwner"
+        Background="#08070d">
+    <Grid Margin="0">
+        <Grid.Background>
+            <RadialGradientBrush Center="0.25,0.05" GradientOrigin="0.25,0.05" RadiusX="0.9" RadiusY="0.9">
+                <GradientStop Color="#4a170b" Offset="0" />
+                <GradientStop Color="#2a1031" Offset="0.48" />
+                <GradientStop Color="#08070d" Offset="1" />
+            </RadialGradientBrush>
+        </Grid.Background>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel Margin="22,22,22,10">
+            <TextBlock x:Name="DialogTitleText" Text="Nova Addon moechte Zugriff" Foreground="#ffe4d4" FontSize="22" FontWeight="Black" TextWrapping="Wrap">
+                <TextBlock.Effect>
+                    <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#ff5a24" Opacity="0.5" />
+                </TextBlock.Effect>
+            </TextBlock>
+            <TextBlock Text="Dieses Addon moechte folgende Berechtigungen:" Foreground="#cbb8df" Margin="0,8,0,0" />
+        </StackPanel>
+        <Border Grid.Row="1" Margin="22,8" CornerRadius="18" Background="#21142d" BorderBrush="#ff6a2b" BorderThickness="1">
+            <ListBox x:Name="PermissionsList" Margin="12" Background="Transparent" Foreground="#f3ecff" BorderThickness="0" />
+        </Border>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="22">
+            <Button Content="Abbrechen" Width="116" Height="38" Margin="0,0,10,0" Click="Cancel_Click" Background="#251226" Foreground="#f3ecff" BorderBrush="#b967ff" />
+            <Button Content="Installieren" Width="128" Height="38" Click="Install_Click" Background="#ff5a24" Foreground="White" BorderBrush="#ffd7c2" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,22 @@
+bin/
+obj/
+publish/
+release/
+.vs/
+.idea/
+*.user
+*.suo
+*.log
+*.tmp
+*.zip
+debug-*.png
+cef-backup-*/
+
+# Local browser/runtime data
+AppData/
+Cache/
+GPUCache/
+Code Cache/
+User Data/
+
+# Keep source, assets, scripts and documentation in Git.

@@ -1,0 +1,283 @@
+<UserControl x:Class="NovaBrowser.App.UI.MainBrowserMenu"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="410"
+             FontFamily="Segoe UI">
+    <UserControl.Resources>
+        <Style x:Key="ChromeMenuIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="#5f6368" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="ChromeMenuButton" TargetType="Button">
+            <Setter Property="Height" Value="29" />
+            <Setter Property="Padding" Value="20,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="RowRoot" Background="{TemplateBinding Background}">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RowRoot" Property="Background" Value="#f1f3f4" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="RowRoot" Property="Background" Value="#e8eaed" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RoundChromeButton" TargetType="Button">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="3,0" />
+            <Setter Property="Background" Value="#f1f3f4" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="#3c4043" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" CornerRadius="16" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#e8eaed" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#dfe3eb" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="#ffffff"
+            BorderBrush="#e5e8ef"
+            BorderThickness="1"
+            CornerRadius="14"
+            SnapsToDevicePixels="True">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="32" ShadowDepth="7" Direction="270" Color="#000000" Opacity="0.24" />
+        </Border.Effect>
+        <ScrollViewer MaxHeight="760"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="0"
+                      CanContentScroll="False">
+        <StackPanel Margin="0,10">
+            <Grid Height="38" Margin="20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="&#xE72E;" Style="{StaticResource ChromeMenuIcon}" />
+                <TextBlock Grid.Column="1" Text="Safe Browsing ist deaktiviert" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+            </Grid>
+
+            <Border Height="1" Background="#e8eaed" Margin="0,4,0,10" />
+
+            <Button Style="{StaticResource ChromeMenuButton}" Click="NewTab_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE8A7;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="Strg+T" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Neuer Tab" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="NewWindow_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE8A7;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="Strg+N" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Neues Fenster" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Incognito_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE7EE;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="Strg+Umschalttaste+N" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Neues Inkognitofenster" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+
+            <Border Height="1" Background="#e8eaed" Margin="0,10,0,8" />
+
+            <Button Height="42" Margin="12,0" Padding="10,0" Background="#e8f0fe" BorderBrush="Transparent" HorizontalContentAlignment="Stretch" Click="Profile_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ProfileRoot" Background="{TemplateBinding Background}" CornerRadius="11">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ProfileRoot" Property="Background" Value="#dce9ff" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="13" VerticalAlignment="Center" />
+                    <Border Width="30" Height="30" CornerRadius="15" Background="#ffffff" BorderBrush="#c9d6f4" BorderThickness="1" Margin="0,0,10,0">
+                        <TextBlock Text="D" Foreground="#202124" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="Dennis" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                    <Border Background="#d2e3fc" CornerRadius="12" Padding="8,3" Margin="14,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Angemeldet" Foreground="#174ea6" FontSize="12" />
+                    </Border>
+                </DockPanel>
+            </Button>
+
+            <Border Height="1" Background="#e8eaed" Margin="0,8,0,8" />
+
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Passwords_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE72E;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Passwörter und Autofill" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="History_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE81C;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Verlauf" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Downloads_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE896;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="Strg+J" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Downloads" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Bookmarks_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE734;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Lesezeichen und Listen" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="TabGroups_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE8A9;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Tabgruppen" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Extensions_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xECAA;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Erweiterungen" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="ClearData_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE74D;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="Strg+Umschalttaste+Entf" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Browserdaten löschen..." Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+
+            <Border Height="1" Background="#e8eaed" Margin="0,8,0,8" />
+
+            <Grid Height="44" Margin="20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="36" />
+                    <ColumnDefinition Width="58" />
+                    <ColumnDefinition Width="36" />
+                    <ColumnDefinition Width="36" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="&#xE721;" Style="{StaticResource ChromeMenuIcon}" />
+                <TextBlock Grid.Column="1" Text="Zoomen" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Content="&#xE738;" Style="{StaticResource RoundChromeButton}" Click="ZoomOut_Click" />
+                <TextBlock Grid.Column="3" Text="{Binding ZoomText, RelativeSource={RelativeSource AncestorType=UserControl}}" Foreground="#202124" FontSize="13" TextAlignment="Center" VerticalAlignment="Center" />
+                <Button Grid.Column="4" Content="&#xE710;" Style="{StaticResource RoundChromeButton}" Click="ZoomIn_Click" />
+                <Button Grid.Column="5" Content="&#xE740;" Style="{StaticResource RoundChromeButton}" Click="Fullscreen_Click" />
+            </Grid>
+
+            <Border Height="1" Background="#e8eaed" Margin="0,8,0,8" />
+
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Print_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE749;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="Strg+P" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Drucken..." Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Lens_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE722;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock Text="Mit Google Lens in diesem Tab suchen" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Translate_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE774;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock Text="Übersetzen..." Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="FindEdit_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE721;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Suchen und bearbeiten" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Share_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE72D;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Streamen, speichern und teilen" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="MoreTools_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE90F;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Weitere Tools" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+
+            <Border Height="1" Background="#e8eaed" Margin="0,8,0,8" />
+
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Help_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE897;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" Foreground="#5f6368" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="Hilfe" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Settings_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE713;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock Text="Einstellungen" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+            <Button Style="{StaticResource ChromeMenuButton}" Click="Exit_Click">
+                <DockPanel>
+                    <TextBlock Text="&#xE8BB;" Style="{StaticResource ChromeMenuIcon}" />
+                    <TextBlock Text="Beenden" Foreground="#202124" FontSize="13" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+        </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>
