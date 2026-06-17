@@ -1010,7 +1010,7 @@
                                             <StackPanel Grid.Column="1">
                                                 <TextBlock Text="{Binding UpdateStatusText}" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
                                                 <TextBlock Text="{Binding UpdateDetailText}" Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,12" />
-                                                <ProgressBar Minimum="0" Maximum="100" Value="{Binding UpdateProgress}" Height="10" Style="{StaticResource NovaDownloadProgressBar}" />
+                                                <ProgressBar Minimum="0" Maximum="100" Value="{Binding UpdateProgress, Mode=OneWay}" Height="10" Style="{StaticResource NovaDownloadProgressBar}" />
                                                 <TextBlock Text="{Binding UpdateProgressText}" Foreground="#dfc9ff" FontSize="12" Margin="0,8,0,0" />
                                             </StackPanel>
                                         </Grid>
