@@ -411,11 +411,11 @@
             PreviewMouseDown="RootGrid_PreviewMouseDown">
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
-            <RowDefinition Height="48" />
-            <RowDefinition Height="52" />
-            <RowDefinition Height="34" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="26" />
+            <RowDefinition x:Name="TitleBarRow" Height="48" />
+            <RowDefinition x:Name="ToolbarRow" Height="52" />
+            <RowDefinition x:Name="BookmarkRow" Height="34" />
+            <RowDefinition x:Name="ContentRow" Height="*" />
+            <RowDefinition x:Name="StatusRow" Height="26" />
         </Grid.RowDefinitions>
 
         <Grid x:Name="TitleBar" Grid.Row="0" Background="{StaticResource ChromeTop}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
@@ -479,7 +479,7 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" Background="{StaticResource ChromeBar}" Margin="0">
+        <Grid x:Name="ToolbarBar" Grid.Row="1" Background="{StaticResource ChromeBar}" Margin="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -652,7 +652,7 @@
             </Border>
         </Grid>
 
-        <Border Grid.Row="2" Background="#1f2026" BorderBrush="#30313a" BorderThickness="0,1,0,1">
+        <Border x:Name="BookmarkBar" Grid.Row="2" Background="#1f2026" BorderBrush="#30313a" BorderThickness="0,1,0,1">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding Bookmarks}">
                     <ItemsControl.ItemsPanel>
@@ -1732,7 +1732,7 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top" />
 
-        <Border Grid.Row="4" Background="#202124" BorderBrush="#34313d" BorderThickness="0,1,0,0">
+        <Border x:Name="StatusBar" Grid.Row="4" Background="#202124" BorderBrush="#34313d" BorderThickness="0,1,0,0">
             <TextBlock x:Name="StatusText" Text="Bereit" Foreground="{StaticResource MutedText}" VerticalAlignment="Center" Padding="14,0" FontSize="12" />
         </Border>
     </Grid>

@@ -363,7 +363,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 HandleAuthCallback),
             PermissionHandler = new NovaPermissionHandler(Dispatcher, RecordDiagnostic, ShowBrowserPermissionPrompt),
             MenuHandler = new NovaContextMenuHandler(message => RunOnUi(() => StatusText.Text = message, "context-menu-status")),
-            JsDialogHandler = new NovaJsDialogHandler(message => RunOnUi(() => StatusText.Text = message, "js-dialog-status"))
+            JsDialogHandler = new NovaJsDialogHandler(message => RunOnUi(() => StatusText.Text = message, "js-dialog-status")),
+            DisplayHandler = new NovaDisplayHandler(Dispatcher, SetFullscreenFromWebContent)
         };
         var slowLoadTimer = new System.Windows.Threading.DispatcherTimer
         {
@@ -3583,20 +3584,52 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ToggleFullscreen()
     {
-        if (_isFullscreen)
+        SetFullscreen(!_isFullscreen);
+    }
+
+    private void SetFullscreenFromWebContent(bool fullscreen)
+    {
+        SetFullscreen(fullscreen);
+    }
+
+    private void SetFullscreen(bool fullscreen)
+    {
+        if (fullscreen == _isFullscreen)
         {
-            WindowState = _stateBeforeFullscreen;
-            TitleBar.Visibility = Visibility.Visible;
-            WindowFrame.BorderThickness = WindowState == WindowState.Maximized ? new Thickness(0) : new Thickness(1);
-            _isFullscreen = false;
+            return;
         }
-        else
+
+        if (fullscreen)
         {
+            CloseTransientPanels();
             _stateBeforeFullscreen = WindowState;
             WindowState = WindowState.Maximized;
             TitleBar.Visibility = Visibility.Collapsed;
+            ToolbarBar.Visibility = Visibility.Collapsed;
+            BookmarkBar.Visibility = Visibility.Collapsed;
+            StatusBar.Visibility = Visibility.Collapsed;
+            TitleBarRow.Height = new GridLength(0);
+            ToolbarRow.Height = new GridLength(0);
+            BookmarkRow.Height = new GridLength(0);
+            StatusRow.Height = new GridLength(0);
             WindowFrame.BorderThickness = new Thickness(0);
+            Topmost = true;
             _isFullscreen = true;
+        }
+        else
+        {
+            Topmost = false;
+            WindowState = _stateBeforeFullscreen;
+            TitleBar.Visibility = Visibility.Visible;
+            ToolbarBar.Visibility = Visibility.Visible;
+            BookmarkBar.Visibility = Visibility.Visible;
+            StatusBar.Visibility = Visibility.Visible;
+            TitleBarRow.Height = new GridLength(48);
+            ToolbarRow.Height = new GridLength(52);
+            BookmarkRow.Height = new GridLength(34);
+            StatusRow.Height = new GridLength(26);
+            WindowFrame.BorderThickness = WindowState == WindowState.Maximized ? new Thickness(0) : new Thickness(1);
+            _isFullscreen = false;
         }
 
         UpdateWindowChromeState();
