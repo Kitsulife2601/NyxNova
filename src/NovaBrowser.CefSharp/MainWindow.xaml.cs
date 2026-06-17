@@ -70,6 +70,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly UpdateManager _updateManager = new(new GithubSource("https://github.com/Kitsulife2601/NyxNova", null, prerelease: true, downloader: null));
     private UpdateInfo? _availableUpdate;
     private VelopackAsset? _readyUpdate;
+    private bool _suppressOmniboxSuggestions;
 
     public MainWindow() : this(false)
     {
@@ -113,6 +114,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public ObservableCollection<NovaDownloadItem> Downloads => _downloadService.Items;
     public ObservableCollection<AddonItem> StoreAddons => _addonService.Catalog;
     public ObservableCollection<AddonItem> InstalledAddons => _addonService.Installed;
+    public ObservableCollection<OmniboxSuggestion> OmniboxSuggestions { get; } = new();
     public IEnumerable<AddonItem> PinnedExtensions => _addonService.Pinned.ToList();
     public IEnumerable<HistoryItem> RecentHistory => History.Take(5).ToList();
     public IEnumerable<NovaDownloadItem> RecentDownloads => Downloads.Take(5).ToList();
@@ -338,8 +340,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return tab.Browser;
         }
 
+        var browserSettings = new CefSharp.BrowserSettings
+        {
+            Javascript = CefState.Enabled,
+            JavascriptCloseWindows = CefState.Disabled,
+            LocalStorage = CefState.Enabled,
+            Databases = CefState.Enabled,
+            WebGl = CefState.Enabled,
+            ImageLoading = CefState.Enabled,
+            WindowlessFrameRate = 60
+        };
+
         var browser = new ChromiumWebBrowser("about:blank")
         {
+            BrowserSettings = browserSettings,
             LifeSpanHandler = new NovaLifeSpanHandler(Dispatcher, OpenInNewTab, RecordDiagnostic, HandleAuthCallback),
             DownloadHandler = new NovaDownloadHandler(_downloadService, Dispatcher),
             RequestHandler = new NovaVideoCompatibilityRequestHandler(
@@ -350,16 +364,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             PermissionHandler = new NovaPermissionHandler(Dispatcher, RecordDiagnostic, ShowBrowserPermissionPrompt),
             MenuHandler = new NovaContextMenuHandler(message => RunOnUi(() => StatusText.Text = message, "context-menu-status")),
             JsDialogHandler = new NovaJsDialogHandler(message => RunOnUi(() => StatusText.Text = message, "js-dialog-status"))
-        };
-        browser.BrowserSettings = new CefSharp.BrowserSettings
-        {
-            Javascript = CefState.Enabled,
-            JavascriptCloseWindows = CefState.Disabled,
-            LocalStorage = CefState.Enabled,
-            Databases = CefState.Enabled,
-            WebGl = CefState.Enabled,
-            ImageLoading = CefState.Enabled,
-            WindowlessFrameRate = 60
         };
         var slowLoadTimer = new System.Windows.Threading.DispatcherTimer
         {
@@ -1545,7 +1549,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             InternalHost.Visibility = Visibility.Collapsed;
             BrowserHost.Content = EnsureBrowser(tab);
+            _suppressOmniboxSuggestions = true;
             AddressBox.Text = AddressParser.HomeUrl;
+            _suppressOmniboxSuggestions = false;
             var startPage = GetAddonStartPageUri();
             if (tab.Browser?.Address != startPage)
             {
@@ -1555,14 +1561,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         else if (AddressParser.IsInternalUrl(tab.Url))
         {
             BrowserHost.Content = null;
+            _suppressOmniboxSuggestions = true;
             AddressBox.Text = tab.Url;
+            _suppressOmniboxSuggestions = false;
             ShowInternalPage(tab.Url);
         }
         else
         {
             InternalHost.Visibility = Visibility.Collapsed;
             BrowserHost.Content = EnsureBrowser(tab);
+            _suppressOmniboxSuggestions = true;
             AddressBox.Text = tab.Url;
+            _suppressOmniboxSuggestions = false;
             if (tab.Browser?.Address != tab.Url)
             {
                 tab.Browser?.Load(tab.Url);
@@ -1578,6 +1588,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         var url = AddressParser.Normalize(input, _settingsService.Current.SearchEngine);
         CloseTransientPanels();
+        CloseOmniboxSuggestions();
         if (_activeTab is null)
         {
             CreateTab(url, select: true);
@@ -1610,7 +1621,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var browser = EnsureBrowser(_activeTab);
         BrowserHost.Content = browser;
         InternalHost.Visibility = Visibility.Collapsed;
+        _suppressOmniboxSuggestions = true;
         AddressBox.Text = url;
+        _suppressOmniboxSuggestions = false;
         browser.Load(url);
     }
 
@@ -2104,10 +2117,163 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void AddressBox_KeyDown(object sender, KeyEventArgs e)
     {
+        if (OmniboxPopup.Visibility == Visibility.Visible)
+        {
+            if (e.Key == Key.Down)
+            {
+                var next = OmniboxSuggestionsList.SelectedIndex < OmniboxSuggestions.Count - 1
+                    ? OmniboxSuggestionsList.SelectedIndex + 1
+                    : 0;
+                OmniboxSuggestionsList.SelectedIndex = next;
+                OmniboxSuggestionsList.ScrollIntoView(OmniboxSuggestionsList.SelectedItem);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Up)
+            {
+                var previous = OmniboxSuggestionsList.SelectedIndex > 0
+                    ? OmniboxSuggestionsList.SelectedIndex - 1
+                    : OmniboxSuggestions.Count - 1;
+                OmniboxSuggestionsList.SelectedIndex = previous;
+                OmniboxSuggestionsList.ScrollIntoView(OmniboxSuggestionsList.SelectedItem);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Escape)
+            {
+                CloseOmniboxSuggestions();
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (e.Key == Key.Enter)
         {
-            NavigateActive(AddressBox.Text);
+            if (OmniboxPopup.Visibility == Visibility.Visible &&
+                OmniboxSuggestionsList.SelectedItem is OmniboxSuggestion suggestion)
+            {
+                NavigateActive(suggestion.Target);
+            }
+            else
+            {
+                NavigateActive(AddressBox.Text);
+            }
+
+            e.Handled = true;
         }
+    }
+
+    private void AddressBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressOmniboxSuggestions || !AddressBox.IsKeyboardFocusWithin)
+        {
+            return;
+        }
+
+        RefreshOmniboxSuggestions(AddressBox.Text);
+    }
+
+    private void AddressBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        AddressBox.SelectAll();
+        RefreshOmniboxSuggestions(AddressBox.Text);
+    }
+
+    private void OmniboxSuggestionsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (OmniboxSuggestionsList.SelectedItem is OmniboxSuggestion suggestion)
+        {
+            NavigateActive(suggestion.Target);
+        }
+    }
+
+    private void OmniboxSuggestion_Click(object sender, MouseButtonEventArgs e)
+    {
+        if ((sender as ListBoxItem)?.DataContext is OmniboxSuggestion suggestion)
+        {
+            NavigateActive(suggestion.Target);
+            e.Handled = true;
+        }
+    }
+
+    private void OmniboxSuggestionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+    }
+
+    private void RefreshOmniboxSuggestions(string input)
+    {
+        var query = (input ?? "").Trim();
+        OmniboxSuggestions.Clear();
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            foreach (var item in History.Take(6))
+            {
+                OmniboxSuggestions.Add(OmniboxSuggestion.FromHistory(item));
+            }
+        }
+        else
+        {
+            var normalized = AddressParser.Normalize(query, _settingsService.Current.SearchEngine);
+            if (AddressParser.IsWebUrl(normalized) || AddressParser.IsInternalUrl(normalized))
+            {
+                OmniboxSuggestions.Add(new OmniboxSuggestion("\uE774", query, normalized, normalized, "Oeffnen"));
+            }
+
+            foreach (var item in History
+                         .Where(item => item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                                        item.Url.Contains(query, StringComparison.OrdinalIgnoreCase))
+                         .Take(6))
+            {
+                OmniboxSuggestions.Add(OmniboxSuggestion.FromHistory(item));
+            }
+
+            OmniboxSuggestions.Add(new OmniboxSuggestion("\uE721", query, $"Suche mit {_settingsService.Current.SearchEngine}", query, "Suche"));
+
+            foreach (var suggestion in BuildSearchCompletions(query).Take(4))
+            {
+                OmniboxSuggestions.Add(new OmniboxSuggestion("\uE721", suggestion, "Suchvorschlag", suggestion, ""));
+            }
+        }
+
+        var unique = OmniboxSuggestions
+            .GroupBy(item => item.Target, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .Take(8)
+            .ToList();
+
+        OmniboxSuggestions.Clear();
+        foreach (var item in unique)
+        {
+            OmniboxSuggestions.Add(item);
+        }
+
+        OmniboxSuggestionsList.SelectedIndex = OmniboxSuggestions.Count > 0 ? 0 : -1;
+        var hasSuggestions = OmniboxSuggestions.Count > 0;
+        OmniboxPopup.Visibility = hasSuggestions ? Visibility.Visible : Visibility.Collapsed;
+        OmniboxPopupHost.IsOpen = hasSuggestions;
+    }
+
+    private static IEnumerable<string> BuildSearchCompletions(string query)
+    {
+        if (query.Contains(' '))
+        {
+            yield break;
+        }
+
+        yield return query + " youtube";
+        yield return query + " download";
+        yield return query + " github";
+        yield return query + " wiki";
+    }
+
+    private void CloseOmniboxSuggestions()
+    {
+        OmniboxPopup.Visibility = Visibility.Collapsed;
+        OmniboxPopupHost.IsOpen = false;
+        OmniboxSuggestions.Clear();
     }
 
     private void StartSearchBox_KeyDown(object sender, KeyEventArgs e)
@@ -3474,6 +3640,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             IsInsideElement(source, BookmarkButtonShell) ||
             IsInsideElement(source, DownloadsButton) ||
             IsInsideElement(source, DownloadButtonShell) ||
+            IsInsideElement(source, AddressBarShell) ||
             IsInsideElement(source, MainMenuButton) ||
             IsInsideElement(source, NewTabButton))
         {
@@ -3501,7 +3668,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                      ExtensionsPopup,
                      ExtensionActionPopup,
                      BookmarkPopup,
-                     DownloadsPopup
+                     DownloadsPopup,
+                     OmniboxPopup
                  })
         {
             if (!ReferenceEquals(panel, except))
@@ -3510,6 +3678,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 if (ReferenceEquals(panel, DownloadsPopup))
                 {
                     DownloadsPopupHost.IsOpen = false;
+                }
+                else if (ReferenceEquals(panel, OmniboxPopup))
+                {
+                    OmniboxPopupHost.IsOpen = false;
+                    OmniboxSuggestions.Clear();
                 }
             }
         }
@@ -4107,5 +4280,32 @@ public sealed class VisibilityToBooleanConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return value is true ? Visibility.Visible : Visibility.Collapsed;
+    }
+}
+
+public sealed class OmniboxSuggestion
+{
+    public OmniboxSuggestion(string icon, string title, string subtitle, string target, string badge)
+    {
+        Icon = icon;
+        Title = title;
+        Subtitle = subtitle;
+        Target = target;
+        Badge = badge;
+    }
+
+    public string Icon { get; }
+    public string Title { get; }
+    public string Subtitle { get; }
+    public string Target { get; }
+    public string Badge { get; }
+
+    public static OmniboxSuggestion FromHistory(HistoryItem item)
+    {
+        var title = string.IsNullOrWhiteSpace(item.Title) ? item.Url : item.Title;
+        var icon = item.Url.Contains("youtube", StringComparison.OrdinalIgnoreCase)
+            ? "\uE714"
+            : "\uE81C";
+        return new OmniboxSuggestion(icon, title, item.Url, item.Url, "Verlauf");
     }
 }

@@ -497,7 +497,7 @@
                 <Button Content="&#xE80F;" FontSize="19" Style="{StaticResource ToolbarButton}" Click="Home_Click" ToolTip="Startseite" />
             </StackPanel>
 
-            <Border Grid.Column="1" Height="40" CornerRadius="20" Background="{StaticResource AddressGlowBrush}" BorderBrush="#7f56b7" BorderThickness="1.4" VerticalAlignment="Center">
+            <Border x:Name="AddressBarShell" Grid.Column="1" Height="40" CornerRadius="20" Background="{StaticResource AddressGlowBrush}" BorderBrush="#7f56b7" BorderThickness="1.4" VerticalAlignment="Center">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#8f42ff" Opacity="0.30" />
                 </Border.Effect>
@@ -512,10 +512,85 @@
                         <ComboBoxItem Content="DuckDuckGo" />
                         <ComboBoxItem Content="Bing" />
                     </ComboBox>
-                    <TextBox x:Name="AddressBox" Grid.Column="1" Style="{StaticResource AddressTextBox}" KeyDown="AddressBox_KeyDown" ToolTip="Suche oder URL eingeben" />
+                    <TextBox x:Name="AddressBox" Grid.Column="1" Style="{StaticResource AddressTextBox}" KeyDown="AddressBox_KeyDown" TextChanged="AddressBox_TextChanged" GotKeyboardFocus="AddressBox_GotKeyboardFocus" ToolTip="Suche oder URL eingeben" />
                     <Button Grid.Column="2" Content="&#xE72A;" Width="32" Height="32" Background="#272331" BorderBrush="#8d5cc6" Foreground="#d7a7ff" FontSize="16" FontWeight="Black" Style="{StaticResource ToolbarButton}" Click="Go_Click" ToolTip="Los" />
                 </Grid>
             </Border>
+
+            <Popup x:Name="OmniboxPopupHost"
+                   Grid.Column="1"
+                   PlacementTarget="{Binding ElementName=AddressBarShell}"
+                   Placement="Bottom"
+                   VerticalOffset="8"
+                   AllowsTransparency="True"
+                   StaysOpen="False">
+                <Border x:Name="OmniboxPopup"
+                        Width="{Binding ActualWidth, ElementName=AddressBarShell}"
+                        MaxHeight="420"
+                        Background="#f2181127"
+                        BorderBrush="#b967ff"
+                        BorderThickness="1.2"
+                        CornerRadius="18"
+                        Padding="8"
+                        Visibility="Collapsed">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="30" ShadowDepth="0" Color="#9f4dff" Opacity="0.50" />
+                    </Border.Effect>
+                    <ListBox x:Name="OmniboxSuggestionsList"
+                             ItemsSource="{Binding OmniboxSuggestions}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Foreground="{StaticResource NovaText}"
+                             MouseDoubleClick="OmniboxSuggestionsList_MouseDoubleClick"
+                             SelectionChanged="OmniboxSuggestionsList_SelectionChanged">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0,2" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Background" Value="Transparent" />
+                                <EventSetter Event="PreviewMouseLeftButtonUp" Handler="OmniboxSuggestion_Click" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="ItemHost" CornerRadius="12" Background="{TemplateBinding Background}">
+                                                <ContentPresenter />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ItemHost" Property="Background" Value="#2a1a3d" />
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="ItemHost" Property="Background" Value="#3a1f56" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Height="44" Margin="8,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="36" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="26" Height="26" CornerRadius="13" Background="#251736" BorderBrush="#895ac1" BorderThickness="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" Foreground="#e8d7ff" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" Foreground="{StaticResource NovaText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource MutedText}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{Binding Badge}" Foreground="#cda8ff" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" Margin="12,0,4,0" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+            </Popup>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,12,0">
                 <Button x:Name="ExtensionsButton" Content="&#xECAA;" Width="38" Style="{StaticResource ToolbarButton}" Click="ExtensionsButton_Click" ToolTip="Erweiterungen" />

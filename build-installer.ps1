@@ -6,12 +6,15 @@ $publishDir = Join-Path $projectRoot "installer\publish"
 $releaseDir = Join-Path $projectRoot "installer\Releases"
 $notesFile = Join-Path $projectRoot "BETA_RELEASE_NOTES.md"
 $iconFile = Join-Path $projectRoot "src\NovaBrowser.CefSharp\Assets\nyxnova-icon.ico"
+$version = [xml](Get-Content -LiteralPath $projectFile)
+$packVersion = $version.Project.PropertyGroup.Version
 $cefSource = "C:\cef-build\nova-cef-148\cef-148-codecs-win-x64"
 $cefInstallScript = Join-Path $projectRoot "cef-codecs-required\install-custom-cef-runtime.ps1"
 
 Write-Host "NyxNova Installer-Build startet..."
 Write-Host "Publish:" $publishDir
 Write-Host "Releases:" $releaseDir
+Write-Host "Version:" $packVersion
 
 if (Test-Path -LiteralPath $publishDir) {
     Remove-Item -LiteralPath $publishDir -Recurse -Force
@@ -35,7 +38,7 @@ vpk pack `
     --packId "NyxNova" `
     --packTitle "NyxNova Browser" `
     --packAuthors "Kitsulife2601" `
-    --packVersion "1.0.5" `
+    --packVersion $packVersion `
     --packDir $publishDir `
     --mainExe "NovaBrowser.CefSharp.exe" `
     --runtime "win-x64" `
