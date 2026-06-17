@@ -1,4 +1,4 @@
-# NovaBrowser.CefSharp
+# NyxNova
 
 NovaBrowser.CefSharp ist die neue Windows-Version des Browsers auf C#/.NET/WPF mit CEFSharp. Electron, React und Vite werden fuer diese Version nicht mehr verwendet.
 
