@@ -71,6 +71,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private UpdateInfo? _availableUpdate;
     private VelopackAsset? _readyUpdate;
     private bool _suppressOmniboxSuggestions;
+    private BrowserTab? _tabDragCandidate;
+    private Point _tabDragStartPoint;
 
     public MainWindow() : this(false)
     {
@@ -2410,9 +2412,59 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (sender is FrameworkElement { Tag: BrowserTab tab })
         {
+            _tabDragCandidate = tab;
+            _tabDragStartPoint = e.GetPosition(this);
             SelectTab(tab);
             e.Handled = true;
         }
+    }
+
+    private void Tab_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed ||
+            _tabDragCandidate is null ||
+            sender is not FrameworkElement { Tag: BrowserTab tab } ||
+            !ReferenceEquals(tab, _tabDragCandidate))
+        {
+            return;
+        }
+
+        var current = e.GetPosition(this);
+        if (Math.Abs(current.X - _tabDragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(current.Y - _tabDragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        DragDrop.DoDragDrop((DependencyObject)sender, tab, DragDropEffects.Move);
+        _tabDragCandidate = null;
+    }
+
+    private void Tab_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(typeof(BrowserTab)) ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void Tab_Drop(object sender, DragEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: BrowserTab targetTab } ||
+            e.Data.GetData(typeof(BrowserTab)) is not BrowserTab draggedTab ||
+            ReferenceEquals(targetTab, draggedTab))
+        {
+            return;
+        }
+
+        var oldIndex = Tabs.IndexOf(draggedTab);
+        var newIndex = Tabs.IndexOf(targetTab);
+        if (oldIndex < 0 || newIndex < 0 || oldIndex == newIndex)
+        {
+            return;
+        }
+
+        Tabs.Move(oldIndex, newIndex);
+        SelectTab(draggedTab);
+        e.Handled = true;
     }
 
     private void CloseTabButton_Click(object sender, RoutedEventArgs e)

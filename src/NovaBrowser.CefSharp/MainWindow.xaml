@@ -441,7 +441,18 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="196" Height="34" Margin="3,3,0,0" CornerRadius="4" BorderBrush="#2a2433" BorderThickness="1" MouseLeftButtonDown="Tab_MouseLeftButtonDown" Tag="{Binding}">
+                                <Border Width="196"
+                                        Height="34"
+                                        Margin="3,3,0,0"
+                                        CornerRadius="4"
+                                        BorderBrush="#2a2433"
+                                        BorderThickness="1"
+                                        MouseLeftButtonDown="Tab_MouseLeftButtonDown"
+                                        MouseMove="Tab_MouseMove"
+                                        AllowDrop="True"
+                                        DragOver="Tab_DragOver"
+                                        Drop="Tab_Drop"
+                                        Tag="{Binding}">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="#171620" />
