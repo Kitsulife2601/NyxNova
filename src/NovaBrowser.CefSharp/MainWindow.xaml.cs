@@ -3614,11 +3614,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             TitleBar.Visibility = Visibility.Collapsed;
             ToolbarBar.Visibility = Visibility.Collapsed;
             BookmarkBar.Visibility = Visibility.Collapsed;
+            SidebarPlaceholder.Visibility = Visibility.Collapsed;
             StatusBar.Visibility = Visibility.Collapsed;
             TitleBarRow.Height = new GridLength(0);
             ToolbarRow.Height = new GridLength(0);
             BookmarkRow.Height = new GridLength(0);
             StatusRow.Height = new GridLength(0);
+            SidebarColumn.Width = new GridLength(0);
             WindowFrame.BorderThickness = new Thickness(0);
             Topmost = true;
             _isFullscreen = true;
@@ -3629,12 +3631,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             WindowState = _stateBeforeFullscreen;
             TitleBar.Visibility = Visibility.Visible;
             ToolbarBar.Visibility = Visibility.Visible;
-            BookmarkBar.Visibility = Visibility.Visible;
+            BookmarkBar.Visibility = Visibility.Collapsed;
+            SidebarPlaceholder.Visibility = Visibility.Visible;
             StatusBar.Visibility = Visibility.Visible;
-            TitleBarRow.Height = new GridLength(48);
-            ToolbarRow.Height = new GridLength(52);
-            BookmarkRow.Height = new GridLength(34);
+            TitleBarRow.Height = new GridLength(40);
+            ToolbarRow.Height = new GridLength(42);
+            BookmarkRow.Height = new GridLength(0);
             StatusRow.Height = new GridLength(26);
+            SidebarColumn.Width = new GridLength(48);
             WindowFrame.BorderThickness = WindowState == WindowState.Maximized ? new Thickness(0) : new Thickness(1);
             _isFullscreen = false;
         }
@@ -3660,7 +3664,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         else
         {
-            WindowFrame.CornerRadius = new CornerRadius(14);
+            WindowFrame.CornerRadius = new CornerRadius(2);
             WindowFrame.BorderThickness = new Thickness(1);
             MaximizeButton.Content = "\uE922";
         }

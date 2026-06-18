@@ -26,20 +26,20 @@
     <Window.Resources>
         <local:VisibilityToBooleanConverter x:Key="VisibilityToBooleanConverter" />
         <LinearGradientBrush x:Key="ChromeTop" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#13141c" Offset="0" />
-            <GradientStop Color="#20172a" Offset="0.55" />
-            <GradientStop Color="#151722" Offset="1" />
+            <GradientStop Color="#12101a" Offset="0" />
+            <GradientStop Color="#171220" Offset="0.55" />
+            <GradientStop Color="#0c0b12" Offset="1" />
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="ChromeBar" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#1a1b24" Offset="0" />
-            <GradientStop Color="#251a32" Offset="0.48" />
-            <GradientStop Color="#1a1b24" Offset="1" />
+            <GradientStop Color="#11101a" Offset="0" />
+            <GradientStop Color="#17111f" Offset="0.48" />
+            <GradientStop Color="#0d0c14" Offset="1" />
         </LinearGradientBrush>
-        <SolidColorBrush x:Key="NovaText" Color="#f3ecff" />
-        <SolidColorBrush x:Key="MutedText" Color="#a99bbd" />
+        <SolidColorBrush x:Key="NovaText" Color="#f4eefc" />
+        <SolidColorBrush x:Key="MutedText" Color="#8f869b" />
         <LinearGradientBrush x:Key="NovaButton" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#7f35ff" Offset="0" />
-            <GradientStop Color="#d14bff" Offset="1" />
+            <GradientStop Color="#ff1d5c" Offset="0" />
+            <GradientStop Color="#a739ff" Offset="1" />
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="NovaFireButton" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#ff5a24" Offset="0" />
@@ -62,8 +62,8 @@
             <GradientStop Color="#07080d" Offset="1" />
         </RadialGradientBrush>
         <LinearGradientBrush x:Key="AddressGlowBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#211a2d" Offset="0" />
-            <GradientStop Color="#151822" Offset="1" />
+            <GradientStop Color="#15111f" Offset="0" />
+            <GradientStop Color="#0e0d15" Offset="1" />
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="NovaToolbarButtonIdle" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#252633" Offset="0" />
@@ -81,10 +81,10 @@
         </LinearGradientBrush>
 
         <Style x:Key="ToolbarButton" TargetType="Button">
-            <Setter Property="Width" Value="38" />
-            <Setter Property="Height" Value="38" />
-            <Setter Property="Margin" Value="3,0" />
-            <Setter Property="Foreground" Value="#c98cff" />
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Foreground" Value="#ff2a62" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
@@ -95,22 +95,24 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="Root" CornerRadius="9" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
+                            <Border x:Name="Root" CornerRadius="5" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#20212b" />
-                                <Setter Property="Foreground" Value="#ead6ff" />
+                                <Setter TargetName="Root" Property="Background" Value="#261423" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#ff2a62" />
+                                <Setter TargetName="Root" Property="BorderThickness" Value="1" />
+                                <Setter Property="Foreground" Value="#ffffff" />
                                 <Setter TargetName="Root" Property="Effect">
                                     <Setter.Value>
-                                        <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#b967ff" Opacity="0.30" />
+                                        <DropShadowEffect BlurRadius="14" ShadowDepth="0" Color="#ff1d5c" Opacity="0.42" />
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#2a2235" />
+                                <Setter TargetName="Root" Property="Background" Value="#3a1229" />
                                 <Setter Property="Foreground" Value="#ffffff" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
@@ -205,11 +207,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#503071" />
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#3a1427" />
                                 <Setter Property="Foreground" Value="#ffffff" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#3d255a" />
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#2b1020" />
                                 <Setter Property="Foreground" Value="#ffffff" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -222,8 +224,8 @@
             <Setter Property="Height" Value="30" />
             <Setter Property="MinWidth" Value="112" />
             <Setter Property="Foreground" Value="#f3ecff" />
-            <Setter Property="Background" Value="#24172f" />
-            <Setter Property="BorderBrush" Value="#694596" />
+            <Setter Property="Background" Value="#17111e" />
+            <Setter Property="BorderBrush" Value="#4a314f" />
             <Setter Property="FontFamily" Value="Segoe UI" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -248,7 +250,7 @@
                                 </ToggleButton.Template>
                                 <Border x:Name="ChipRoot" CornerRadius="15" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" SnapsToDevicePixels="True">
                                     <DockPanel Margin="11,0,8,0">
-                                        <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Foreground="#d8c4ff" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Foreground="#ff2a62" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0" />
                                         <TextBlock Text="{Binding SelectedItem.Content, RelativeSource={RelativeSource TemplatedParent}}"
                                                    Foreground="{TemplateBinding Foreground}"
                                                    FontFamily="{TemplateBinding FontFamily}"
@@ -266,9 +268,9 @@
                                    AllowsTransparency="True"
                                    Focusable="False"
                                    PopupAnimation="Fade">
-                                <Border MinWidth="{TemplateBinding ActualWidth}" Background="#f015101f" BorderBrush="#9d66df" BorderThickness="1" CornerRadius="14" Padding="5">
+                                <Border MinWidth="{TemplateBinding ActualWidth}" Background="#f00f0c16" BorderBrush="#ff2a62" BorderThickness="1" CornerRadius="10" Padding="5">
                                     <Border.Effect>
-                                        <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#a968ff" Opacity="0.30" />
+                                        <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#ff1d5c" Opacity="0.36" />
                                     </Border.Effect>
                                     <ScrollViewer MaxHeight="190" Background="Transparent">
                                         <ItemsPresenter />
@@ -278,11 +280,11 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ChipRoot" Property="BorderBrush" Value="#b967ff" />
-                                <Setter TargetName="ChipRoot" Property="Background" Value="#2d1e42" />
+                                <Setter TargetName="ChipRoot" Property="BorderBrush" Value="#ff2a62" />
+                                <Setter TargetName="ChipRoot" Property="Background" Value="#21111f" />
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="ChipRoot" Property="Background" Value="#2d1e42" />
+                                <Setter TargetName="ChipRoot" Property="Background" Value="#21111f" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -294,7 +296,7 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource NovaText}" />
-            <Setter Property="CaretBrush" Value="#f3ecff" />
+            <Setter Property="CaretBrush" Value="#ff2a62" />
             <Setter Property="FontSize" Value="15" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -404,29 +406,29 @@
     </Window.Resources>
 
     <Border x:Name="WindowFrame"
-            Background="#0b0c12"
-            BorderBrush="#392c51"
+            Background="#0b0911"
+            BorderBrush="#ff1d5c"
             BorderThickness="1"
-            CornerRadius="14"
+            CornerRadius="2"
             PreviewMouseDown="RootGrid_PreviewMouseDown">
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
-            <RowDefinition x:Name="TitleBarRow" Height="48" />
-            <RowDefinition x:Name="ToolbarRow" Height="52" />
-            <RowDefinition x:Name="BookmarkRow" Height="34" />
+            <RowDefinition x:Name="TitleBarRow" Height="40" />
+            <RowDefinition x:Name="ToolbarRow" Height="42" />
+            <RowDefinition x:Name="BookmarkRow" Height="0" />
             <RowDefinition x:Name="ContentRow" Height="*" />
             <RowDefinition x:Name="StatusRow" Height="26" />
         </Grid.RowDefinitions>
 
         <Grid x:Name="TitleBar" Grid.Row="0" Background="{StaticResource ChromeTop}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="60" />
+                <ColumnDefinition Width="48" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="142" />
             </Grid.ColumnDefinitions>
 
-            <Border Width="36" Height="36" CornerRadius="12" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#16131d" BorderBrush="#6e49a1" BorderThickness="1">
-                <Image Source="Assets/nyxnova-icon-transparent.png" Width="30" Height="30" Stretch="UniformToFill" ClipToBounds="True" />
+            <Border Width="30" Height="30" CornerRadius="4" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#140b16" BorderBrush="#ff2a62" BorderThickness="1">
+                <Image Source="Assets/nyxnova-icon-transparent.png" Width="25" Height="25" Stretch="UniformToFill" ClipToBounds="True" />
             </Border>
 
             <ScrollViewer x:Name="TabsScrollViewer" Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Stretch">
@@ -439,17 +441,17 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="214" Height="38" Margin="4,5,0,0" CornerRadius="18,18,6,6" BorderBrush="#363247" BorderThickness="1" MouseLeftButtonDown="Tab_MouseLeftButtonDown" Tag="{Binding}">
+                                <Border Width="196" Height="34" Margin="3,3,0,0" CornerRadius="4" BorderBrush="#2a2433" BorderThickness="1" MouseLeftButtonDown="Tab_MouseLeftButtonDown" Tag="{Binding}">
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="#242631" />
+                                            <Setter Property="Background" Value="#171620" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter Property="Background" Value="#3d2a52" />
-                                                    <Setter Property="BorderBrush" Value="#b967ff" />
+                                                    <Setter Property="Background" Value="#2a1428" />
+                                                    <Setter Property="BorderBrush" Value="#ff2a62" />
                                                     <Setter Property="Effect">
                                                         <Setter.Value>
-                                                            <DropShadowEffect BlurRadius="16" ShadowDepth="0" Color="#9b5cff" Opacity="0.28" />
+                                                            <DropShadowEffect BlurRadius="14" ShadowDepth="0" Color="#ff1d5c" Opacity="0.34" />
                                                         </Setter.Value>
                                                     </Setter>
                                                 </DataTrigger>
@@ -457,9 +459,9 @@
                                         </Style>
                                     </Border.Style>
                                     <DockPanel LastChildFill="True">
-                                        <Button DockPanel.Dock="Right" Content="&#xE711;" Width="28" Height="28" Margin="0,5,6,5" Style="{StaticResource ToolbarButton}" Click="CloseTabButton_Click" Tag="{Binding}" />
-                                        <Border DockPanel.Dock="Left" Width="22" Height="22" CornerRadius="11" Margin="10,6,8,6" Background="#141118" BorderBrush="#7a42c5" BorderThickness="1">
-                                            <TextBlock Text="{Binding FaviconText}" Foreground="#d8c4ff" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Button DockPanel.Dock="Right" Content="&#xE711;" Width="26" Height="26" Margin="0,4,5,4" Style="{StaticResource ToolbarButton}" Click="CloseTabButton_Click" Tag="{Binding}" />
+                                        <Border DockPanel.Dock="Left" Width="20" Height="20" CornerRadius="3" Margin="9,7,8,7" Background="#100d16" BorderBrush="#ff2a62" BorderThickness="1">
+                                            <TextBlock Text="{Binding FaviconText}" Foreground="#ffeff5" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
                                         <TextBlock Text="{Binding Title}" Foreground="{StaticResource NovaText}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                     </DockPanel>
@@ -468,7 +470,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button x:Name="NewTabButton" Content="&#xE710;" Width="38" Height="38" Margin="8,5,10,5" Style="{StaticResource ToolbarButton}" Click="NewTab_Click" ToolTip="Neuer Tab" />
+                    <Button x:Name="NewTabButton" Content="&#xE710;" Width="32" Height="32" Margin="8,4,10,4" Style="{StaticResource ToolbarButton}" Click="NewTab_Click" ToolTip="Neuer Tab" />
                 </StackPanel>
             </ScrollViewer>
 
@@ -486,7 +488,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,8,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="50,0,8,0">
                 <Button Content="&#xE72B;" FontSize="20" Style="{StaticResource ToolbarButton}" Click="Back_Click" ToolTip="Zurueck" />
                 <Button Content="&#xE72A;" FontSize="20" Style="{StaticResource ToolbarButton}" Click="Forward_Click" ToolTip="Vorwaerts" />
                 <Button x:Name="ReloadButton" Content="&#xE72C;" FontSize="19" Style="{StaticResource ToolbarButton}" Click="Reload_Click" ToolTip="Neu laden" RenderTransformOrigin="0.5,0.5">
@@ -497,9 +499,9 @@
                 <Button Content="&#xE80F;" FontSize="19" Style="{StaticResource ToolbarButton}" Click="Home_Click" ToolTip="Startseite" />
             </StackPanel>
 
-            <Border x:Name="AddressBarShell" Grid.Column="1" Height="40" CornerRadius="20" Background="{StaticResource AddressGlowBrush}" BorderBrush="#7f56b7" BorderThickness="1.4" VerticalAlignment="Center">
+            <Border x:Name="AddressBarShell" Grid.Column="1" Height="34" CornerRadius="4" Background="{StaticResource AddressGlowBrush}" BorderBrush="#2d2434" BorderThickness="1" VerticalAlignment="Center">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#8f42ff" Opacity="0.30" />
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#ff1d5c" Opacity="0.18" />
                 </Border.Effect>
                 <Grid Margin="9,0,6,0">
                     <Grid.ColumnDefinitions>
@@ -513,7 +515,7 @@
                         <ComboBoxItem Content="Bing" />
                     </ComboBox>
                     <TextBox x:Name="AddressBox" Grid.Column="1" Style="{StaticResource AddressTextBox}" KeyDown="AddressBox_KeyDown" TextChanged="AddressBox_TextChanged" GotKeyboardFocus="AddressBox_GotKeyboardFocus" ToolTip="Suche oder URL eingeben" />
-                    <Button Grid.Column="2" Content="&#xE72A;" Width="32" Height="32" Background="#272331" BorderBrush="#8d5cc6" Foreground="#d7a7ff" FontSize="16" FontWeight="Black" Style="{StaticResource ToolbarButton}" Click="Go_Click" ToolTip="Los" />
+                    <Button Grid.Column="2" Content="&#xE72A;" Width="28" Height="28" Background="#20101e" BorderBrush="#ff2a62" Foreground="#ff2a62" FontSize="15" FontWeight="Black" Style="{StaticResource ToolbarButton}" Click="Go_Click" ToolTip="Los" />
                 </Grid>
             </Border>
 
@@ -669,26 +671,40 @@
             </ScrollViewer>
         </Border>
 
-        <Grid Grid.Row="3" Background="#0c0a10">
+        <Grid Grid.Row="3" Background="#0b0911">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="SidebarColumn" Width="48" />
+                <ColumnDefinition x:Name="BrowserColumn" Width="*" />
+            </Grid.ColumnDefinitions>
             <Border x:Name="SidebarPlaceholder"
-                    Width="42"
-                    HorizontalAlignment="Left"
-                    Background="#1f2026"
-                    BorderBrush="#30313a"
+                    Grid.Column="0"
+                    Background="#0d0a13"
+                    BorderBrush="#22182a"
                     BorderThickness="0,0,1,0"
-                    Visibility="Collapsed">
-                <TextBlock Text="N"
-                           Foreground="#b96cff"
-                           FontSize="18"
-                           FontWeight="Black"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Top"
-                           Margin="0,14,0,0" />
+                    Visibility="Visible">
+                <Grid>
+                    <StackPanel VerticalAlignment="Top" Margin="0,18,0,0">
+                        <Button Content="&#xE80F;" Style="{StaticResource ToolbarButton}" Click="Home_Click" ToolTip="Startseite" />
+                        <Button Content="&#xE81C;" Style="{StaticResource ToolbarButton}" Click="Reload_Click" ToolTip="Neu laden" Margin="2,10,2,0" />
+                        <Button Content="&#xE81E;" Style="{StaticResource ToolbarButton}" Click="Downloads_Click" ToolTip="Downloads" Margin="2,10,2,0" />
+                        <Button Content="&#xE734;" Style="{StaticResource ToolbarButton}" Click="Bookmark_Click" ToolTip="Lesezeichen" Margin="2,10,2,0" />
+                        <Button Content="&#xECAA;" Style="{StaticResource ToolbarButton}" Click="OpenExtensionsPage_Click" ToolTip="Addons" Margin="2,10,2,0" />
+                        <Button Content="&#xE713;" Style="{StaticResource ToolbarButton}" Click="Settings_Click" ToolTip="Einstellungen" Margin="2,10,2,0" />
+                    </StackPanel>
+                    <TextBlock Text="GX"
+                               Foreground="#ff2a62"
+                               FontSize="10"
+                               FontWeight="Black"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Bottom"
+                               Margin="0,0,0,18" />
+                </Grid>
             </Border>
 
-            <ContentControl x:Name="BrowserHost" />
+            <ContentControl x:Name="BrowserHost" Grid.Column="1" />
 
             <Border x:Name="FindBar"
+                    Grid.Column="1"
                     Width="420"
                     Height="46"
                     HorizontalAlignment="Right"
@@ -727,7 +743,7 @@
                 </Grid>
             </Border>
 
-            <Grid x:Name="InternalHost" Visibility="Collapsed" Background="{StaticResource NovaAuroraBackground}">
+            <Grid x:Name="InternalHost" Grid.Column="1" Visibility="Collapsed" Background="{StaticResource NovaAuroraBackground}">
                 <Grid IsHitTestVisible="False" Opacity="0.78">
                     <Ellipse Width="560" Height="360" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-120,-120,0" Fill="#402088">
                         <Ellipse.Effect>
