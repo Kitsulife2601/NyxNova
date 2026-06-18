@@ -54,6 +54,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _isClosing;
     private Storyboard? _reloadStoryboard;
     private Storyboard? _loadingBarStoryboard;
+    private Storyboard? _pageLoadingStoryboard;
     private Storyboard? _downloadPulseStoryboard;
     private Window? _downloadsFlyoutWindow;
     private Window? _bookmarkFlyoutWindow;
@@ -1969,6 +1970,53 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _loadingBarStoryboard.Children.Add(barScale);
             _loadingBarStoryboard.Children.Add(barOpacity);
             _loadingBarStoryboard.Begin(this, true);
+
+            PageLoadingOverlay.Visibility = Visibility.Visible;
+            PageLoadingOverlay.Opacity = 1;
+            PageLoadingRingRotate.Angle = 0;
+            PageLoadingLogoScale.ScaleX = 1;
+            PageLoadingLogoScale.ScaleY = 1;
+
+            var ringSpin = new DoubleAnimation(0, 360, TimeSpan.FromMilliseconds(1200))
+            {
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+            Storyboard.SetTarget(ringSpin, PageLoadingRingRotate);
+            Storyboard.SetTargetProperty(ringSpin, new PropertyPath(RotateTransform.AngleProperty));
+
+            var logoPulseX = new DoubleAnimation(0.96, 1.05, TimeSpan.FromMilliseconds(760))
+            {
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+            Storyboard.SetTarget(logoPulseX, PageLoadingLogoScale);
+            Storyboard.SetTargetProperty(logoPulseX, new PropertyPath(ScaleTransform.ScaleXProperty));
+
+            var logoPulseY = new DoubleAnimation(0.96, 1.05, TimeSpan.FromMilliseconds(760))
+            {
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+            Storyboard.SetTarget(logoPulseY, PageLoadingLogoScale);
+            Storyboard.SetTargetProperty(logoPulseY, new PropertyPath(ScaleTransform.ScaleYProperty));
+
+            var overlayBreath = new DoubleAnimation(0.72, 1, TimeSpan.FromMilliseconds(620))
+            {
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+            Storyboard.SetTarget(overlayBreath, PageLoadingOverlay);
+            Storyboard.SetTargetProperty(overlayBreath, new PropertyPath(UIElement.OpacityProperty));
+
+            _pageLoadingStoryboard = new Storyboard();
+            _pageLoadingStoryboard.Children.Add(ringSpin);
+            _pageLoadingStoryboard.Children.Add(logoPulseX);
+            _pageLoadingStoryboard.Children.Add(logoPulseY);
+            _pageLoadingStoryboard.Children.Add(overlayBreath);
+            _pageLoadingStoryboard.Begin(this, true);
             return;
         }
 
@@ -1976,11 +2024,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _reloadStoryboard = null;
         _loadingBarStoryboard?.Stop(this);
         _loadingBarStoryboard = null;
+        _pageLoadingStoryboard?.Stop(this);
+        _pageLoadingStoryboard = null;
         ReloadButtonSpin.Angle = 0;
-        ReloadButton.Foreground = new SolidColorBrush(Color.FromRgb(201, 140, 255));
+        ReloadButton.Foreground = new SolidColorBrush(Color.FromRgb(255, 42, 98));
         PageLoadingGlow.Visibility = Visibility.Collapsed;
         PageLoadingGlow.Opacity = 0;
         PageLoadingScale.ScaleX = 0.05;
+        PageLoadingRingRotate.Angle = 0;
+        PageLoadingLogoScale.ScaleX = 1;
+        PageLoadingLogoScale.ScaleY = 1;
+        PageLoadingOverlay.Opacity = 0;
+        PageLoadingOverlay.Visibility = Visibility.Collapsed;
     }
 
     private void UpdateDownloadVisualState()

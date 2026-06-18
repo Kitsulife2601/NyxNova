@@ -1727,7 +1727,67 @@
                             ExitRequested="MainMenu_ExitRequested" />
         </Popup>
 
-        <Border x:Name="SlowLoadBar" Grid.Row="3" VerticalAlignment="Bottom" Margin="18" Background="#ee17121f" BorderBrush="#a968ff" BorderThickness="1" CornerRadius="16" Padding="14,10" Visibility="Collapsed">
+        <Grid x:Name="PageLoadingOverlay"
+              Grid.Row="3"
+              Panel.ZIndex="18"
+              Margin="48,0,0,0"
+              Visibility="Collapsed"
+              Opacity="0"
+              IsHitTestVisible="False">
+            <Border Width="230"
+                    Height="230"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="#cc07050c"
+                    BorderBrush="#412030"
+                    BorderThickness="1"
+                    CornerRadius="18">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="42" ShadowDepth="0" Color="#ff1d5c" Opacity="0.36" />
+                </Border.Effect>
+            </Border>
+
+            <Grid Width="176"
+                  Height="176"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform>
+                    <RotateTransform x:Name="PageLoadingRingRotate" Angle="0" />
+                </Grid.RenderTransform>
+                <Ellipse Width="176" Height="176" Stroke="#2d1a2a" StrokeThickness="11" Opacity="0.9" />
+                <Ellipse Width="176" Height="176" Stroke="#ffffff" StrokeThickness="13" StrokeDashArray="7 4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.96" />
+                <Ellipse Width="150" Height="150" Stroke="#ff1d5c" StrokeThickness="6" StrokeDashArray="4 7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.95" />
+                <Ellipse Width="128" Height="128" Stroke="#27e7ff" StrokeThickness="5" StrokeDashArray="8 10" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.9" />
+            </Grid>
+
+            <Grid Width="104"
+                  Height="104"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform>
+                    <ScaleTransform x:Name="PageLoadingLogoScale" ScaleX="1" ScaleY="1" />
+                </Grid.RenderTransform>
+                <Ellipse Fill="#dd0c0812" Stroke="#ff2a62" StrokeThickness="1.3">
+                    <Ellipse.Effect>
+                        <DropShadowEffect BlurRadius="24" ShadowDepth="0" Color="#ff1d5c" Opacity="0.45" />
+                    </Ellipse.Effect>
+                </Ellipse>
+                <Image Source="Assets/nyxnova-icon-transparent.png" Width="88" Height="88" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True" />
+            </Grid>
+
+            <TextBlock Text="NyxNova laedt..."
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="0,186,0,0"
+                       Foreground="#f7edf4"
+                       FontSize="13"
+                       FontWeight="Bold"
+                       Opacity="0.88" />
+        </Grid>
+
+        <Border x:Name="SlowLoadBar" Grid.Row="3" Panel.ZIndex="19" VerticalAlignment="Bottom" Margin="18" Background="#ee17121f" BorderBrush="#a968ff" BorderThickness="1" CornerRadius="16" Padding="14,10" Visibility="Collapsed">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#a968ff" Opacity="0.28" />
             </Border.Effect>
