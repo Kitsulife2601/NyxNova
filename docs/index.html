@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="NyxNova ist ein dunkler Neon-Browser fuer Windows mit Nova-Design, Tabs, Downloads, Updates und eigenem Look."
+    />
+    <title>NyxNova Browser</title>
+    <link rel="icon" href="assets/nyxnova-icon-transparent.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="#top" aria-label="NyxNova Start">
+          <img src="assets/nyxnova-icon-transparent.png" alt="" />
+          <span>NyxNova</span>
+        </a>
+        <nav aria-label="Hauptnavigation">
+          <a href="#features">Funktionen</a>
+          <a href="#download">Download</a>
+          <a href="#beta">Beta</a>
+        </nav>
+        <a class="header-action" href="https://github.com/Kitsulife2601/NyxNova" target="_blank" rel="noreferrer">
+          GitHub ansehen
+        </a>
+      </header>
+
+      <main id="top">
+        <section class="hero section-frame">
+          <div class="hero-copy reveal">
+            <h1>Willkommen bei NyxNova</h1>
+            <p>
+              Ein eigener Windows-Browser mit dunklem Nova-Look, Neon-Details, Tabs,
+              Downloads und einem Update-System, das sich wie eine echte App anfuehlt.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#download">Browser testen</a>
+              <a class="button secondary" href="https://github.com/Kitsulife2601/NyxNova" target="_blank" rel="noreferrer">
+                GitHub ansehen
+              </a>
+            </div>
+            <div class="hero-note">
+              <span></span>
+              Beta fuer Windows 64-bit
+            </div>
+          </div>
+
+          <div class="browser-preview reveal" aria-label="NyxNova Browser Vorschau">
+            <div class="preview-titlebar">
+              <div class="preview-logo">
+                <img src="assets/nyxnova-icon-transparent.png" alt="" />
+              </div>
+              <div class="preview-tab active">Neuer Tab</div>
+              <div class="preview-tab">YouTube</div>
+              <div class="preview-plus">+</div>
+              <div class="window-dots">
+                <i></i><i></i><i></i>
+              </div>
+            </div>
+            <div class="preview-toolbar">
+              <span class="round-icon">‹</span>
+              <span class="round-icon">›</span>
+              <span class="round-icon">↻</span>
+              <div class="address">nova://start</div>
+              <span class="go">➜</span>
+            </div>
+            <div class="preview-content">
+              <div class="orb-wrap">
+                <img src="assets/nyxnova-icon-transparent.png" alt="" />
+              </div>
+              <h2>NyxNova</h2>
+              <div class="preview-search">Suche oder URL eingeben</div>
+              <div class="quick-row">
+                <span>Google</span>
+                <span>YouTube</span>
+                <span>GitHub</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" class="features">
+          <article class="feature-card reveal">
+            <strong>Nova-Design</strong>
+            <p>Dunkle Oberflaeche, violette Akzente und ein eigener Look statt Standard-Browser-Gefuehl.</p>
+          </article>
+          <article class="feature-card reveal">
+            <strong>Tabs, Downloads und Updates</strong>
+            <p>Tabs verschieben, Downloads verfolgen und Beta-Updates direkt aus dem Browser bekommen.</p>
+          </article>
+          <article class="feature-card reveal">
+            <strong>CEFSharp-Basis</strong>
+            <p>Gebaut als native Windows-App mit persistenten Cookies, Sessions und moderner Browser-Technik.</p>
+          </article>
+        </section>
+
+        <section id="download" class="download-panel section-frame reveal">
+          <div>
+            <h2>Beta herunterladen</h2>
+            <p>
+              Teste NyxNova als Beta-Version. Der Download fuehrt zu den GitHub-Releases,
+              wo die aktuelle Setup-Datei bereitgestellt werden kann.
+            </p>
+          </div>
+          <div class="download-actions">
+            <a class="button primary" href="https://github.com/Kitsulife2601/NyxNova/releases/latest" target="_blank" rel="noreferrer">
+              Zum Download
+            </a>
+            <a class="button ghost" href="https://github.com/Kitsulife2601/NyxNova" target="_blank" rel="noreferrer">
+              Projekt oeffnen
+            </a>
+          </div>
+        </section>
+
+        <section id="beta" class="beta-grid">
+          <div class="beta-copy reveal">
+            <h2>Bereit zum Testen?</h2>
+            <p>
+              NyxNova ist noch in Entwicklung. Feedback zu Design, Downloads, Medien,
+              Updates und Webseiten-Kompatibilitaet hilft dabei, den Browser weiter sauber auszubauen.
+            </p>
+          </div>
+          <div class="status-list reveal">
+            <div><span></span> Eigener Installer</div>
+            <div><span></span> Update-Hinweis im Browser</div>
+            <div><span></span> Neon-Ladeanimation</div>
+            <div><span></span> Nova Startseite</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
