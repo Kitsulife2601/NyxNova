@@ -2403,6 +2403,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Tab_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (e.OriginalSource is DependencyObject source && IsInsideType<Button>(source))
+        {
+            return;
+        }
+
         if (sender is FrameworkElement { Tag: BrowserTab tab })
         {
             SelectTab(tab);
@@ -2418,6 +2423,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         CloseTab(tab);
+        e.Handled = true;
     }
 
     private void CloseActiveTab()
@@ -2448,7 +2454,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (wasActive)
         {
-            SelectTab(Tabs[Math.Clamp(index - 1, 0, Tabs.Count - 1)]);
+            var nextIndex = Math.Clamp(index, 0, Tabs.Count - 1);
+            SelectTab(Tabs[nextIndex]);
         }
     }
 
