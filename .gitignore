@@ -4,6 +4,7 @@ publish/
 release/
 installer/publish/
 installer/Releases/
+docs/downloads/
 .vs/
 .idea/
 *.user
@@ -22,3 +23,5 @@ Code Cache/
 User Data/
 
 # Keep source, assets, scripts and documentation in Git.
+
+upload-token-vault.json*

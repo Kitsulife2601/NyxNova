@@ -2750,25 +2750,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         var wasActive = ReferenceEquals(tab, _activeTab);
         var index = Tabs.IndexOf(tab);
-        if (wasActive)
+        if (index < 0)
         {
-            BrowserHost.Content = null;
-        }
-
-        Tabs.Remove(tab);
-        SafeDisposeBrowser(tab, "close-tab");
-
-        if (Tabs.Count == 0)
-        {
-            OpenInNewTab(AddressParser.HomeUrl);
             return;
         }
 
         if (wasActive)
         {
-            var nextIndex = Math.Clamp(index, 0, Tabs.Count - 1);
-            SelectTab(Tabs[nextIndex]);
+            BrowserTab nextTab;
+            if (Tabs.Count == 1)
+            {
+                nextTab = CreateTab(AddressParser.HomeUrl, select: false);
+            }
+            else
+            {
+                var nextIndex = index < Tabs.Count - 1 ? index + 1 : index - 1;
+                nextTab = Tabs[nextIndex];
+            }
+
+            SelectTab(nextTab);
         }
+
+        Tabs.Remove(tab);
+        SafeDisposeBrowser(tab, "close-tab");
     }
 
     private static void SafeDisposeBrowser(BrowserTab tab, string source)
