@@ -38,22 +38,22 @@
         <SolidColorBrush x:Key="NovaText" Color="#f4eefc" />
         <SolidColorBrush x:Key="MutedText" Color="#8f869b" />
         <LinearGradientBrush x:Key="NovaButton" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#ff1d5c" Offset="0" />
+            <GradientStop Color="#8f42ff" Offset="0" />
             <GradientStop Color="#a739ff" Offset="1" />
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="NovaFireButton" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#ff5a24" Offset="0" />
-            <GradientStop Color="#c733ff" Offset="0.55" />
-            <GradientStop Color="#7f35ff" Offset="1" />
+            <GradientStop Color="#6f35ff" Offset="0" />
+            <GradientStop Color="#b647ff" Offset="0.55" />
+            <GradientStop Color="#33d6ff" Offset="1" />
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="NovaGlassPanel" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#331728" Offset="0" />
+            <GradientStop Color="#24133f" Offset="0" />
             <GradientStop Color="#15101f" Offset="0.58" />
             <GradientStop Color="#09070d" Offset="1" />
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="NovaFlameWash" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#4a170b" Offset="0" />
-            <GradientStop Color="#2a1031" Offset="0.48" />
+            <GradientStop Color="#28105a" Offset="0" />
+            <GradientStop Color="#33165f" Offset="0.48" />
             <GradientStop Color="#08070c" Offset="1" />
         </LinearGradientBrush>
         <RadialGradientBrush x:Key="NovaAuroraBackground" Center="0.62,0.18" GradientOrigin="0.62,0.18" RadiusX="0.9" RadiusY="0.9">
@@ -84,36 +84,40 @@
             <Setter Property="Width" Value="34" />
             <Setter Property="Height" Value="34" />
             <Setter Property="Margin" Value="2,0" />
-            <Setter Property="Foreground" Value="#ff2a62" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#d46bff" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="18" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="Normal" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <Border x:Name="Root" CornerRadius="5" Background="Transparent" BorderBrush="Transparent" BorderThickness="0">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
+                        <Grid Background="Transparent" SnapsToDevicePixels="True">
+                            <ContentPresenter x:Name="IconPresenter" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#261423" />
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#ff2a62" />
-                                <Setter TargetName="Root" Property="BorderThickness" Value="1" />
-                                <Setter Property="Foreground" Value="#ffffff" />
-                                <Setter TargetName="Root" Property="Effect">
+                                <Setter Property="Foreground" Value="#ff4dff" />
+                                <Setter TargetName="IconPresenter" Property="Effect">
                                     <Setter.Value>
-                                        <DropShadowEffect BlurRadius="14" ShadowDepth="0" Color="#ff1d5c" Opacity="0.42" />
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="0" Color="#c44dff" Opacity="0.65" />
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#3a1229" />
                                 <Setter Property="Foreground" Value="#ffffff" />
+                                <Setter TargetName="IconPresenter" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.92" ScaleY="0.92" />
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.45" />
@@ -207,11 +211,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#3a1427" />
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#31204f" />
                                 <Setter Property="Foreground" Value="#ffffff" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRoot" Property="Background" Value="#2b1020" />
+                                <Setter TargetName="ItemRoot" Property="Background" Value="#251842" />
                                 <Setter Property="Foreground" Value="#ffffff" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -250,7 +254,7 @@
                                 </ToggleButton.Template>
                                 <Border x:Name="ChipRoot" CornerRadius="15" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" SnapsToDevicePixels="True">
                                     <DockPanel Margin="11,0,8,0">
-                                        <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Foreground="#ff2a62" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Foreground="#c08cff" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0" />
                                         <TextBlock Text="{Binding SelectedItem.Content, RelativeSource={RelativeSource TemplatedParent}}"
                                                    Foreground="{TemplateBinding Foreground}"
                                                    FontFamily="{TemplateBinding FontFamily}"
@@ -268,9 +272,9 @@
                                    AllowsTransparency="True"
                                    Focusable="False"
                                    PopupAnimation="Fade">
-                                <Border MinWidth="{TemplateBinding ActualWidth}" Background="#f00f0c16" BorderBrush="#ff2a62" BorderThickness="1" CornerRadius="10" Padding="5">
+                                <Border MinWidth="{TemplateBinding ActualWidth}" Background="#f0120d1f" BorderBrush="#b967ff" BorderThickness="1" CornerRadius="10" Padding="5">
                                     <Border.Effect>
-                                        <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#ff1d5c" Opacity="0.36" />
+                                        <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#a855ff" Opacity="0.42" />
                                     </Border.Effect>
                                     <ScrollViewer MaxHeight="190" Background="Transparent">
                                         <ItemsPresenter />
@@ -280,11 +284,11 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ChipRoot" Property="BorderBrush" Value="#ff2a62" />
-                                <Setter TargetName="ChipRoot" Property="Background" Value="#21111f" />
+                                <Setter TargetName="ChipRoot" Property="BorderBrush" Value="#b967ff" />
+                                <Setter TargetName="ChipRoot" Property="Background" Value="#21182f" />
                             </Trigger>
                             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter TargetName="ChipRoot" Property="Background" Value="#21111f" />
+                                 <Setter TargetName="ChipRoot" Property="Background" Value="#21182f" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -296,7 +300,7 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource NovaText}" />
-            <Setter Property="CaretBrush" Value="#ff2a62" />
+            <Setter Property="CaretBrush" Value="#c08cff" />
             <Setter Property="FontSize" Value="15" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -345,7 +349,7 @@
         <Style x:Key="InstallAddonButton" TargetType="Button" BasedOn="{StaticResource MenuButton}">
             <Setter Property="Content" Value="Installieren" />
             <Setter Property="Background" Value="{StaticResource NovaFireButton}" />
-            <Setter Property="BorderBrush" Value="#ff8d4c" />
+            <Setter Property="BorderBrush" Value="#c08cff" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Installed}" Value="True">
                     <Setter Property="Content" Value="Installiert" />
@@ -354,8 +358,8 @@
         </Style>
         <Style x:Key="NovaChipButton" TargetType="Button" BasedOn="{StaticResource MenuButton}">
             <Setter Property="Background" Value="#251226" />
-            <Setter Property="BorderBrush" Value="#ff6a2b" />
-            <Setter Property="Foreground" Value="#ffd7c2" />
+            <Setter Property="BorderBrush" Value="#b967ff" />
+            <Setter Property="Foreground" Value="#ead8ff" />
             <Setter Property="Height" Value="36" />
             <Setter Property="Margin" Value="0,0,8,8" />
         </Style>
@@ -383,7 +387,7 @@
             <Setter Property="FontSize" Value="12" />
         </Style>
         <Style x:Key="CloseCaptionButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
-            <Setter Property="Foreground" Value="#ffd7dc" />
+            <Setter Property="Foreground" Value="#ead8ff" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -392,11 +396,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#d94343" />
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#ff8a8a" />
+                                <Setter TargetName="Root" Property="Background" Value="#4a2875" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#c08cff" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#9c2626" />
+                                <Setter TargetName="Root" Property="Background" Value="#321f52" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -407,7 +411,7 @@
 
     <Border x:Name="WindowFrame"
             Background="#0b0911"
-            BorderBrush="#ff1d5c"
+            BorderBrush="#8f42ff"
             BorderThickness="1"
             CornerRadius="2"
             PreviewMouseDown="RootGrid_PreviewMouseDown">
@@ -417,7 +421,7 @@
             <RowDefinition x:Name="ToolbarRow" Height="42" />
             <RowDefinition x:Name="BookmarkRow" Height="0" />
             <RowDefinition x:Name="ContentRow" Height="*" />
-            <RowDefinition x:Name="StatusRow" Height="26" />
+            <RowDefinition x:Name="StatusRow" Height="0" />
         </Grid.RowDefinitions>
 
         <Grid x:Name="TitleBar" Grid.Row="0" Background="{StaticResource ChromeTop}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
@@ -427,12 +431,23 @@
                 <ColumnDefinition Width="142" />
             </Grid.ColumnDefinitions>
 
-            <Border Width="30" Height="30" CornerRadius="4" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#140b16" BorderBrush="#ff2a62" BorderThickness="1">
-                <Image Source="Assets/nyxnova-icon-transparent.png" Width="25" Height="25" Stretch="UniformToFill" ClipToBounds="True" />
+            <Border Width="36"
+                    Height="36"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    MouseLeftButtonDown="WindowDragArea_MouseLeftButtonDown">
+                <Image Source="Assets/nyxnova-icon-transparent.png"
+                       Width="30"
+                       Height="30"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
             </Border>
 
             <ScrollViewer x:Name="TabsScrollViewer" Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Stretch">
-                <StackPanel Orientation="Horizontal">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                     <ItemsControl ItemsSource="{Binding Tabs}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -441,9 +456,11 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="196"
+                                <Border x:Name="AnimatedTabRoot"
+                                        Width="196"
                                         Height="34"
                                         Margin="3,3,0,0"
+                                        Opacity="0"
                                         CornerRadius="4"
                                         BorderBrush="#2a2433"
                                         BorderThickness="1"
@@ -453,16 +470,45 @@
                                         DragOver="Tab_DragOver"
                                         Drop="Tab_Drop"
                                         Tag="{Binding}">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform Y="-9" />
+                                    </Border.RenderTransform>
+                                    <Border.Triggers>
+                                        <EventTrigger RoutedEvent="Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="AnimatedTabRoot"
+                                                                     Storyboard.TargetProperty="Opacity"
+                                                                     From="0"
+                                                                     To="1"
+                                                                     Duration="0:0:0.20">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseOut" />
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                    <DoubleAnimation Storyboard.TargetName="AnimatedTabRoot"
+                                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                     From="-9"
+                                                                     To="0"
+                                                                     Duration="0:0:0.24">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <CubicEase EasingMode="EaseOut" />
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="#171620" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                     <Setter Property="Background" Value="#2a1428" />
-                                                    <Setter Property="BorderBrush" Value="#ff2a62" />
+                                                    <Setter Property="BorderBrush" Value="#b967ff" />
                                                     <Setter Property="Effect">
                                                         <Setter.Value>
-                                                            <DropShadowEffect BlurRadius="14" ShadowDepth="0" Color="#ff1d5c" Opacity="0.34" />
+                                                            <DropShadowEffect BlurRadius="14" ShadowDepth="0" Color="#a855ff" Opacity="0.38" />
                                                         </Setter.Value>
                                                     </Setter>
                                                 </DataTrigger>
@@ -471,8 +517,8 @@
                                     </Border.Style>
                                     <DockPanel LastChildFill="True">
                                         <Button DockPanel.Dock="Right" Content="&#xE711;" Width="26" Height="26" Margin="0,4,5,4" Style="{StaticResource ToolbarButton}" Click="CloseTabButton_Click" Tag="{Binding}" />
-                                        <Border DockPanel.Dock="Left" Width="20" Height="20" CornerRadius="3" Margin="9,7,8,7" Background="#100d16" BorderBrush="#ff2a62" BorderThickness="1">
-                                            <TextBlock Text="{Binding FaviconText}" Foreground="#ffeff5" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Border DockPanel.Dock="Left" Width="20" Height="20" CornerRadius="3" Margin="9,7,8,7" Background="#100d18" BorderBrush="#b967ff" BorderThickness="1">
+                                            <TextBlock Text="{Binding FaviconText}" Foreground="#f2e8ff" FontSize="10" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
                                         <TextBlock Text="{Binding Title}" Foreground="{StaticResource NovaText}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                     </DockPanel>
@@ -482,7 +528,11 @@
                     </ItemsControl>
 
                     <Button x:Name="NewTabButton" Content="&#xE710;" Width="32" Height="32" Margin="8,4,10,4" Style="{StaticResource ToolbarButton}" Click="NewTab_Click" ToolTip="Neuer Tab" />
-                </StackPanel>
+                    </StackPanel>
+                    <Border MinWidth="160"
+                            Background="Transparent"
+                            MouseLeftButtonDown="WindowDragArea_MouseLeftButtonDown" />
+                </DockPanel>
             </ScrollViewer>
 
             <StackPanel x:Name="WindowButtonsPanel" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0">
@@ -512,7 +562,7 @@
 
             <Border x:Name="AddressBarShell" Grid.Column="1" Height="34" CornerRadius="4" Background="{StaticResource AddressGlowBrush}" BorderBrush="#2d2434" BorderThickness="1" VerticalAlignment="Center">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#ff1d5c" Opacity="0.18" />
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#8f42ff" Opacity="0.22" />
                 </Border.Effect>
                 <Grid Margin="9,0,6,0">
                     <Grid.ColumnDefinitions>
@@ -526,7 +576,7 @@
                         <ComboBoxItem Content="Bing" />
                     </ComboBox>
                     <TextBox x:Name="AddressBox" Grid.Column="1" Style="{StaticResource AddressTextBox}" KeyDown="AddressBox_KeyDown" TextChanged="AddressBox_TextChanged" GotKeyboardFocus="AddressBox_GotKeyboardFocus" ToolTip="Suche oder URL eingeben" />
-                    <Button Grid.Column="2" Content="&#xE72A;" Width="28" Height="28" Background="#20101e" BorderBrush="#ff2a62" Foreground="#ff2a62" FontSize="15" FontWeight="Black" Style="{StaticResource ToolbarButton}" Click="Go_Click" ToolTip="Los" />
+                    <Button Grid.Column="2" Content="&#xE72A;" Width="28" Height="28" Background="#1b112a" BorderBrush="#b967ff" Foreground="#c08cff" FontSize="15" FontWeight="Black" Style="{StaticResource ToolbarButton}" Click="Go_Click" ToolTip="Los" />
                 </Grid>
             </Border>
 
@@ -656,7 +706,7 @@
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                         <GradientStop Color="#00b7ff" Offset="0" />
                         <GradientStop Color="#b967ff" Offset="0.5" />
-                        <GradientStop Color="#ff5cff" Offset="1" />
+                        <GradientStop Color="#d86cff" Offset="1" />
                     </LinearGradientBrush>
                 </Border.Background>
                 <Border.Effect>
@@ -682,7 +732,7 @@
             </ScrollViewer>
         </Border>
 
-        <Grid Grid.Row="3" Background="#0b0911">
+        <Grid Grid.Row="3" Background="#0b0911" ClipToBounds="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="SidebarColumn" Width="48" />
                 <ColumnDefinition x:Name="BrowserColumn" Width="*" />
@@ -692,27 +742,208 @@
                     Background="#0d0a13"
                     BorderBrush="#22182a"
                     BorderThickness="0,0,1,0"
-                    Visibility="Visible">
+                    Visibility="Visible"
+                    Panel.ZIndex="60"
+                    ClipToBounds="True">
                 <Grid>
                     <StackPanel VerticalAlignment="Top" Margin="0,18,0,0">
                         <Button Content="&#xE80F;" Style="{StaticResource ToolbarButton}" Click="Home_Click" ToolTip="Startseite" />
-                        <Button Content="&#xE81C;" Style="{StaticResource ToolbarButton}" Click="Reload_Click" ToolTip="Neu laden" Margin="2,10,2,0" />
+                        <Button Content="&#xE81C;" Style="{StaticResource ToolbarButton}" Click="History_Click" ToolTip="Verlauf" Margin="2,10,2,0" />
                         <Button Content="&#xE81E;" Style="{StaticResource ToolbarButton}" Click="Downloads_Click" ToolTip="Downloads" Margin="2,10,2,0" />
                         <Button Content="&#xE734;" Style="{StaticResource ToolbarButton}" Click="Bookmark_Click" ToolTip="Lesezeichen" Margin="2,10,2,0" />
                         <Button Content="&#xECAA;" Style="{StaticResource ToolbarButton}" Click="OpenExtensionsPage_Click" ToolTip="Addons" Margin="2,10,2,0" />
                         <Button Content="&#xE713;" Style="{StaticResource ToolbarButton}" Click="Settings_Click" ToolTip="Einstellungen" Margin="2,10,2,0" />
                     </StackPanel>
-                    <TextBlock Text="GX"
-                               Foreground="#ff2a62"
-                               FontSize="10"
-                               FontWeight="Black"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Bottom"
-                               Margin="0,0,0,18" />
                 </Grid>
             </Border>
 
-            <ContentControl x:Name="BrowserHost" Grid.Column="1" />
+            <Border x:Name="HistorySidePanel"
+                    Grid.Column="1"
+                    Width="410"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Stretch"
+                    Margin="0,0,0,0"
+                    Background="#f4070610"
+                    BorderBrush="#35214d"
+                    BorderThickness="0,0,1,0"
+                    Visibility="Collapsed"
+                    Panel.ZIndex="30">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="36" ShadowDepth="0" Color="#8f42ff" Opacity="0.34" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="4" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" Margin="18,18,16,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,18">
+                            <Button DockPanel.Dock="Right"
+                                    Content="&#xE711;"
+                                    Width="32"
+                                    Height="32"
+                                    Style="{StaticResource ToolbarButton}"
+                                    Click="CloseHistorySidePanel_Click"
+                                    ToolTip="Verlauf schliessen" />
+                            <TextBlock Text="VERLAUF"
+                                       Foreground="#f2eaff"
+                                       FontSize="17"
+                                       FontWeight="Black"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <Grid Grid.Row="1" Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="42" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"
+                                    Height="38"
+                                    Background="#c70c0a14"
+                                    BorderBrush="#4d326d"
+                                    BorderThickness="1"
+                                    CornerRadius="12">
+                                <DockPanel Margin="12,0">
+                                    <TextBlock Text="&#xE721;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               Foreground="#bfa9da"
+                                               FontSize="14"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0" />
+                                    <TextBox x:Name="SideHistorySearchBox"
+                                             BorderThickness="0"
+                                             Background="Transparent"
+                                             Foreground="#f2eaff"
+                                             CaretBrush="#c08cff"
+                                             SelectionBrush="#8f42ff"
+                                             FontSize="13"
+                                             VerticalContentAlignment="Center"
+                                             Text="Verlauf durchsuchen"
+                                             GotFocus="SideHistorySearchBox_GotFocus"
+                                             KeyUp="SideHistorySearchBox_KeyUp" />
+                                </DockPanel>
+                            </Border>
+                            <Button Grid.Column="1"
+                                    Content="&#xE72C;"
+                                    Style="{StaticResource ToolbarButton}"
+                                    Click="ClearHistory_Click"
+                                    ToolTip="Verlauf loeschen"
+                                    Margin="8,0,0,0" />
+                        </Grid>
+
+                        <ListBox x:Name="SideHistoryListBox"
+                                 Grid.Row="2"
+                                 ItemsSource="{Binding History}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{StaticResource NovaText}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 MouseDoubleClick="SideHistoryList_DoubleClick">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,0,0,6" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="ItemRoot"
+                                                        Background="{TemplateBinding Background}"
+                                                        CornerRadius="13"
+                                                        Padding="9,8">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ItemRoot" Property="Background" Value="#241533" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="ItemRoot" Property="Background" Value="#321c4d" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="48" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding VisitedAt, StringFormat={}{0:HH:mm}}"
+                                                   Foreground="#c08cff"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Top" />
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Title}"
+                                                       Foreground="#fff8ff"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Url}"
+                                                       Foreground="#9d91ad"
+                                                       FontSize="12"
+                                                       Margin="0,3,0,0"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Button Grid.Row="3"
+                                Content="Vollstaendige Verlaufsansicht oeffnen"
+                                Style="{StaticResource NovaActionButton}"
+                                Height="42"
+                                Margin="0,14,0,12"
+                                Click="OpenFullHistory_Click" />
+                    </Grid>
+
+                    <Border Grid.Column="1"
+                            Width="4"
+                            HorizontalAlignment="Right"
+                            CornerRadius="3"
+                            Opacity="0.78">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop x:Name="HistoryEdgeA" Color="#00d9ff" Offset="-0.25" />
+                                <GradientStop x:Name="HistoryEdgeB" Color="#c08cff" Offset="0.1" />
+                                <GradientStop x:Name="HistoryEdgeC" Color="#00000000" Offset="0.42" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#b967ff" Opacity="0.82" />
+                        </Border.Effect>
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="HistoryEdgeA" Storyboard.TargetProperty="Offset" From="-0.35" To="0.78" Duration="0:0:3.8" />
+                                        <DoubleAnimation Storyboard.TargetName="HistoryEdgeB" Storyboard.TargetProperty="Offset" From="-0.08" To="1.05" Duration="0:0:3.8" />
+                                        <DoubleAnimation Storyboard.TargetName="HistoryEdgeC" Storyboard.TargetProperty="Offset" From="0.24" To="1.28" Duration="0:0:3.8" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Border.Triggers>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <ContentControl x:Name="BrowserHost" Grid.Column="1" Panel.ZIndex="0" ClipToBounds="True" Background="#0b0911" />
 
             <Border x:Name="FindBar"
                     Grid.Column="1"
@@ -1159,8 +1390,8 @@
                                             <TextBlock Text="{Binding Author, StringFormat=Autor: {0}}" Foreground="{StaticResource MutedText}" />
                                             <TextBlock Text="{Binding Category, StringFormat=Kategorie: {0}}" Foreground="{StaticResource MutedText}" />
                                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                                <Border CornerRadius="12" Background="#251226" BorderBrush="#ff6a2b" BorderThickness="1" Padding="9,4" Margin="0,0,8,0">
-                                                    <TextBlock Text="{Binding Enabled, StringFormat=Status: {0}}" Foreground="#ffd7c2" FontWeight="Bold" />
+                                                <Border CornerRadius="12" Background="#251943" BorderBrush="#b967ff" BorderThickness="1" Padding="9,4" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding Enabled, StringFormat=Status: {0}}" Foreground="#ead8ff" FontWeight="Bold" />
                                                 </Border>
                                                 <Border CornerRadius="12" Background="#22143a" BorderBrush="#b967ff" BorderThickness="1" Padding="9,4">
                                                     <TextBlock Text="{Binding Pinned, StringFormat=Pin: {0}}" Foreground="#e7d4ff" FontWeight="Bold" />
@@ -1200,7 +1431,7 @@
                 <Grid x:Name="StorePage" Visibility="Collapsed" Margin="80,42">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
-                            <Border Height="170" CornerRadius="28" Background="{StaticResource NovaFlameWash}" BorderBrush="#ff6a2b" BorderThickness="1.2" Padding="26" Margin="0,0,0,18">
+                            <Border Height="170" CornerRadius="28" Background="{StaticResource NovaFlameWash}" BorderBrush="#b967ff" BorderThickness="1.2" Padding="26" Margin="0,0,0,18">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -1209,7 +1440,7 @@
                                     <StackPanel VerticalAlignment="Center">
                                         <TextBlock Text="NovaStore" Foreground="#ffe4d4" FontSize="46" FontWeight="Black">
                                             <TextBlock.Effect>
-                                                <DropShadowEffect BlurRadius="28" ShadowDepth="0" Color="#ff5a24" Opacity="0.58" />
+                                                <DropShadowEffect BlurRadius="28" ShadowDepth="0" Color="#a855ff" Opacity="0.58" />
                                             </TextBlock.Effect>
                                         </TextBlock>
                                         <TextBlock Text="Addons fuer deinen Nova Browser" Foreground="#e7d4ff" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0" />
@@ -1257,7 +1488,7 @@
                                     <DataTemplate>
                                         <Border Width="330" Style="{StaticResource NovaCard}">
                                             <StackPanel>
-                                                <Border Width="56" Height="56" CornerRadius="18" Background="{StaticResource NovaFireButton}" BorderBrush="#ffd7c2" BorderThickness="1" HorizontalAlignment="Left">
+                                                <Border Width="56" Height="56" CornerRadius="18" Background="{StaticResource NovaFireButton}" BorderBrush="#ead8ff" BorderThickness="1" HorizontalAlignment="Left">
                                             <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NovaText}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                 </Border>
                                                 <TextBlock Text="{Binding Name}" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" Margin="0,12,0,0" />
@@ -1279,17 +1510,76 @@
                     </DockPanel>
                 </Grid>
 
+                <Grid x:Name="ModsPage" Visibility="Collapsed" Margin="80,42">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Width="860">
+                            <TextBlock Text="NX Mods" Foreground="{StaticResource NovaText}" FontSize="38" FontWeight="Black" Margin="0,0,0,6" />
+                            <TextBlock Text="Ein Nova-Bereich fuer Browser-Mods, Oberflaechen-Module und spaetere Community-Pakete." Foreground="{StaticResource MutedText}" FontSize="15" Margin="0,0,0,24" />
+                            <UniformGrid Columns="3">
+                                <Border Style="{StaticResource NovaCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" Foreground="#c08cff" FontSize="30" />
+                                        <TextBlock Text="UI Mods" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" Margin="0,12,0,6" />
+                                        <TextBlock Text="Layouts, Panels und Schnellzugriffe fuer den Nova-Browser." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                        <Button Content="Vorbereitet" Style="{StaticResource NovaChipButton}" Margin="0,16,0,0" IsEnabled="False" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource NovaCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" Foreground="#c08cff" FontSize="30" />
+                                        <TextBlock Text="Sound Mods" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" Margin="0,12,0,6" />
+                                        <TextBlock Text="Spaeter fuer eigene Sounds, Feedback und dezente Browser-Effekte." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                        <Button Content="In Planung" Style="{StaticResource NovaChipButton}" Margin="0,16,0,0" IsEnabled="False" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource NovaCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Foreground="#c08cff" FontSize="30" />
+                                        <TextBlock Text="Mod-Verwaltung" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" Margin="0,12,0,6" />
+                                        <TextBlock Text="Aktivieren, deaktivieren und verwalten wird hier gesammelt." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                        <Button Content="Manager offen" Style="{StaticResource NovaChipButton}" Margin="0,16,0,0" IsEnabled="False" />
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <Grid x:Name="ShadersPage" Visibility="Collapsed" Margin="80,42">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Width="760">
+                            <TextBlock Text="NX Shader" Foreground="{StaticResource NovaText}" FontSize="38" FontWeight="Black" Margin="0,0,0,6" />
+                            <TextBlock Text="Visuelle Nova-Effekte fuer die Browser-Oberflaeche. Aktuell nur als Design-Bereich vorbereitet." Foreground="{StaticResource MutedText}" FontSize="15" Margin="0,0,0,24" />
+                            <Border Style="{StaticResource NovaCard}" Width="720">
+                                <StackPanel>
+                                    <TextBlock Text="Shader-Auswahl" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" Margin="0,0,0,14" />
+                                    <RadioButton Content="Kein Shader" Foreground="{StaticResource NovaText}" IsChecked="True" Margin="0,8" />
+                                    <RadioButton Content="Nova Glow" Foreground="{StaticResource NovaText}" Margin="0,8" />
+                                    <RadioButton Content="Aurora Soft" Foreground="{StaticResource NovaText}" Margin="0,8" />
+                                    <RadioButton Content="Violet Grid" Foreground="{StaticResource NovaText}" Margin="0,8" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NovaCard}" Width="720">
+                                <StackPanel>
+                                    <TextBlock Text="Hinweis" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" />
+                                    <TextBlock Text="Shader werden erst aktiv geschaltet, wenn die Performance stabil bleibt. Alles bleibt auf Nova-Basis." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
                 <Grid x:Name="AddonDetailPage" Visibility="Collapsed" Margin="80,42">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Width="820">
-                            <Border Height="210" CornerRadius="30" Background="{StaticResource NovaFlameWash}" BorderBrush="#ff6a2b" BorderThickness="1.4" Padding="24">
+                            <Border Height="210" CornerRadius="30" Background="{StaticResource NovaFlameWash}" BorderBrush="#b967ff" BorderThickness="1.4" Padding="24">
                                 <Grid>
-                                    <Border Width="104" Height="104" CornerRadius="28" Background="{StaticResource NovaFireButton}" BorderBrush="#ffd7c2" BorderThickness="1" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <Border Width="104" Height="104" CornerRadius="28" Background="{StaticResource NovaFireButton}" BorderBrush="#ead8ff" BorderThickness="1" HorizontalAlignment="Left" VerticalAlignment="Center">
                                         <TextBlock x:Name="AddonDetailIcon" Text="NA" Foreground="{StaticResource NovaText}" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <StackPanel Margin="132,0,0,0" VerticalAlignment="Center">
                                         <TextBlock x:Name="AddonDetailName" Text="Addon" Foreground="{StaticResource NovaText}" FontSize="36" FontWeight="Black" />
-                                        <TextBlock x:Name="AddonDetailDescription" Text="" Foreground="#ffd7c2" FontSize="15" TextWrapping="Wrap" Margin="0,8,0,0" />
+                                        <TextBlock x:Name="AddonDetailDescription" Text="" Foreground="#ead8ff" FontSize="15" TextWrapping="Wrap" Margin="0,8,0,0" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -1340,6 +1630,27 @@
                 </StackPanel>
             </Border>
 
+            <Border x:Name="GoogleAuthToast"
+                    Width="300"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,22,22"
+                    Background="#ea160f24"
+                    BorderBrush="#b967ff"
+                    BorderThickness="1.2"
+                    CornerRadius="16"
+                    Opacity="0"
+                    Visibility="Collapsed"
+                    IsHitTestVisible="False">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="26" ShadowDepth="0" Color="#b967ff" Opacity="0.45" />
+                </Border.Effect>
+                <StackPanel Margin="16,13">
+                    <TextBlock x:Name="GoogleAuthToastTitle" Text="Google wird geprueft" Foreground="{StaticResource NovaText}" FontSize="16" FontWeight="Black" />
+                    <TextBlock x:Name="GoogleAuthToastHint" Text="Nova prueft die echte Sitzung." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
             <Border x:Name="DownloadHud"
                     Width="320"
                     HorizontalAlignment="Right"
@@ -1378,13 +1689,13 @@
                     VerticalAlignment="Bottom"
                     Margin="0,0,24,158"
                     Background="#f20b0711"
-                    BorderBrush="#ff2a62"
+                    BorderBrush="#b967ff"
                     BorderThickness="1.25"
                     CornerRadius="24"
                     Padding="0"
                     Visibility="Collapsed">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="42" ShadowDepth="0" Color="#ff1d5c" Opacity="0.42" />
+                    <DropShadowEffect BlurRadius="42" ShadowDepth="0" Color="#a855ff" Opacity="0.42" />
                 </Border.Effect>
                 <Grid ClipToBounds="True">
                     <Grid.RowDefinitions>
@@ -1394,7 +1705,7 @@
                     <Border Height="4" VerticalAlignment="Top" CornerRadius="24,24,0,0">
                         <Border.Background>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                <GradientStop Color="#ff1d5c" Offset="0" />
+                                <GradientStop Color="#8f42ff" Offset="0" />
                                 <GradientStop Color="#b657ff" Offset="0.55" />
                                 <GradientStop Color="#27e7ff" Offset="1" />
                             </LinearGradientBrush>
@@ -1409,13 +1720,13 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid Width="48" Height="48" HorizontalAlignment="Left" VerticalAlignment="Top">
-                            <Ellipse Stroke="#ff2a62" StrokeThickness="1.4" Opacity="0.9" />
+                            <Ellipse Stroke="#b967ff" StrokeThickness="1.4" Opacity="0.9" />
                             <Ellipse Stroke="#27e7ff" StrokeThickness="2.4" StrokeDashArray="4 5" Opacity="0.82">
                                 <Ellipse.RenderTransform>
                                     <RotateTransform Angle="-18" CenterX="24" CenterY="24" />
                                 </Ellipse.RenderTransform>
                             </Ellipse>
-                            <Border Width="34" Height="34" CornerRadius="17" Background="#311122" BorderBrush="#ff2a62" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Width="34" Height="34" CornerRadius="17" Background="#261943" BorderBrush="#b967ff" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" Foreground="#ffffff" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" />
                             </Border>
                         </Grid>
@@ -1448,18 +1759,18 @@
         <Popup x:Name="ExtensionsPopupHost"
                PlacementTarget="{Binding ElementName=ExtensionsButton}"
                Placement="Bottom"
-               HorizontalOffset="-322"
+               HorizontalOffset="-336"
                VerticalOffset="8"
-               AllowsTransparency="False"
+               AllowsTransparency="True"
                StaysOpen="False"
                DataContext="{Binding DataContext, ElementName=RootGrid}"
                IsOpen="{Binding Visibility, ElementName=ExtensionsPopup, Converter={StaticResource VisibilityToBooleanConverter}, Mode=TwoWay}">
         <Border x:Name="ExtensionsPopup"
-                Width="360"
-                Background="#dd15101f"
+                Width="374"
+                Background="#f215101f"
                 BorderBrush="#a968ff"
-                BorderThickness="1.2"
-                CornerRadius="18"
+                BorderThickness="1.4"
+                CornerRadius="20"
                 Visibility="Collapsed"
                 DataContext="{Binding DataContext, ElementName=ExtensionsPopupHost}">
             <Border.Resources>
@@ -1472,8 +1783,8 @@
                     <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
                     <Setter Property="FontSize" Value="14" />
                     <Setter Property="Foreground" Value="#f3ecff" />
-                    <Setter Property="Background" Value="#20172d" />
-                    <Setter Property="BorderBrush" Value="#4b3568" />
+                    <Setter Property="Background" Value="#261934" />
+                    <Setter Property="BorderBrush" Value="#6f4a98" />
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="Button">
@@ -1482,7 +1793,7 @@
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="ChromeButtonRoot" Property="Background" Value="#332246" />
+                                        <Setter TargetName="ChromeButtonRoot" Property="Background" Value="#3b2354" />
                                         <Setter TargetName="ChromeButtonRoot" Property="BorderBrush" Value="#b967ff" />
                                         <Setter TargetName="ChromeButtonRoot" Property="Effect">
                                             <Setter.Value>
@@ -1499,7 +1810,7 @@
                     </Setter>
                 </Style>
                 <Style x:Key="ChromePopupRowButton" TargetType="Button">
-                    <Setter Property="Height" Value="42" />
+                    <Setter Property="Height" Value="40" />
                     <Setter Property="Padding" Value="18,0" />
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="Cursor" Value="Hand" />
@@ -1516,7 +1827,7 @@
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="ChromeRowRoot" Property="Background" Value="#2b1d3b" />
+                                        <Setter TargetName="ChromeRowRoot" Property="Background" Value="#2c1b3d" />
                                         <Setter TargetName="ChromeRowRoot" Property="Effect">
                                             <Setter.Value>
                                                 <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#a968ff" Opacity="0.22" />
@@ -1533,12 +1844,12 @@
                 </Style>
             </Border.Resources>
             <Border.Effect>
-                <DropShadowEffect BlurRadius="32" ShadowDepth="0" Color="#a968ff" Opacity="0.32" />
+                <DropShadowEffect BlurRadius="34" ShadowDepth="0" Color="#a968ff" Opacity="0.44" />
             </Border.Effect>
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="58" />
                     <RowDefinition Height="56" />
-                    <RowDefinition Height="54" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="1" />
                     <RowDefinition Height="Auto" />
@@ -1547,7 +1858,7 @@
                 <DockPanel Grid.Row="0" Margin="20,0,12,0">
                     <Button DockPanel.Dock="Right" Content="&#xE711;" Style="{StaticResource ChromePopupIconButton}" Click="CloseExtensionsPopup_Click" ToolTip="Schliessen" />
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="Nova Addons" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" />
+                        <TextBlock Text="Nova Addons" Foreground="{StaticResource NovaText}" FontSize="19" FontWeight="Black" />
                         <TextBlock Text="Erweiterungen fuer diese Seite" Foreground="#bfa9da" FontSize="11" Margin="0,2,0,0" />
                     </StackPanel>
                 </DockPanel>
@@ -1571,18 +1882,18 @@
                 </DockPanel>
                 <Border Grid.Row="1" VerticalAlignment="Bottom" Height="1" Background="#3b2c50" />
 
-                <ScrollViewer Grid.Row="2" MaxHeight="360" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Grid.Row="2" MaxHeight="420" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl x:Name="ExtensionsPopupAddonsList" ItemsSource="{Binding InstalledAddons}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#342843" BorderThickness="0,0,0,1" Padding="18,10" Background="Transparent" CornerRadius="12">
+                                <Border BorderBrush="#342843" BorderThickness="0,0,0,1" Padding="18,10" Background="Transparent" CornerRadius="14">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="38" />
+                                            <ColumnDefinition Width="40" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="72" />
                                         </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16" Background="#241832" BorderBrush="#a968ff" BorderThickness="1">
+                                        <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17" Background="#241832" BorderBrush="#a968ff" BorderThickness="1">
                                             <Border.Effect>
                                                 <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#a968ff" Opacity="0.24" />
                                             </Border.Effect>
@@ -1605,7 +1916,7 @@
 
                 <Border Grid.Row="3" Background="#3b2c50" />
 
-                <StackPanel Grid.Row="4" Margin="0,4,0,6">
+                <StackPanel Grid.Row="4" Margin="0,5,0,7">
                     <Button Style="{StaticResource ChromePopupRowButton}" Click="OpenExtensionsPage_Click">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Left" Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Foreground="#d8c4ff" Width="30" VerticalAlignment="Center" />
@@ -1626,15 +1937,15 @@
         <Popup x:Name="ExtensionActionPopupHost"
                PlacementTarget="{Binding ElementName=ExtensionsButton}"
                Placement="Bottom"
-               HorizontalOffset="-230"
+               HorizontalOffset="-244"
                VerticalOffset="70"
-               AllowsTransparency="False"
+               AllowsTransparency="True"
                StaysOpen="False"
                DataContext="{Binding DataContext, ElementName=RootGrid}"
                IsOpen="{Binding Visibility, ElementName=ExtensionActionPopup, Converter={StaticResource VisibilityToBooleanConverter}, Mode=TwoWay}">
-        <Border x:Name="ExtensionActionPopup" Width="230" MaxHeight="310" Background="#ee15101f" BorderBrush="#a968ff" BorderThickness="1" CornerRadius="14" Padding="8" Visibility="Collapsed">
+        <Border x:Name="ExtensionActionPopup" Width="246" MaxHeight="330" Background="#f215101f" BorderBrush="#a968ff" BorderThickness="1.2" CornerRadius="16" Padding="8" Visibility="Collapsed">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#a968ff" Opacity="0.30" />
+                <DropShadowEffect BlurRadius="26" ShadowDepth="0" Color="#a968ff" Opacity="0.42" />
             </Border.Effect>
             <StackPanel>
                 <TextBlock x:Name="ExtensionActionTitle" Text="Extension" Foreground="{StaticResource NovaText}" FontSize="13" FontWeight="SemiBold" Margin="10,8,10,8" TextTrimming="CharacterEllipsis" />
@@ -1759,6 +2070,12 @@
                             FindEditRequested="MainMenu_FindEditRequested"
                             ShareRequested="MainMenu_ShareRequested"
                             MoreToolsRequested="MainMenu_MoreToolsRequested"
+                            StoreRequested="MainMenu_StoreRequested"
+                            DevToolsRequested="MainMenu_DevToolsRequested"
+                            DiagnosticsRequested="MainMenu_DiagnosticsRequested"
+                            MediaDiagnosticsRequested="MainMenu_MediaDiagnosticsRequested"
+                            SavePageRequested="MainMenu_SavePageRequested"
+                            CopyLinkRequested="MainMenu_CopyLinkRequested"
                             HelpRequested="MainMenu_HelpRequested"
                             SettingsRequested="MainMenu_SettingsRequested"
                             ExitRequested="MainMenu_ExitRequested" />
@@ -1780,7 +2097,7 @@
                     BorderThickness="1"
                     CornerRadius="18">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="42" ShadowDepth="0" Color="#ff1d5c" Opacity="0.36" />
+                    <DropShadowEffect BlurRadius="42" ShadowDepth="0" Color="#a855ff" Opacity="0.36" />
                 </Border.Effect>
             </Border>
 
@@ -1794,7 +2111,7 @@
                 </Grid.RenderTransform>
                 <Ellipse Width="176" Height="176" Stroke="#2d1a2a" StrokeThickness="11" Opacity="0.9" />
                 <Ellipse Width="176" Height="176" Stroke="#ffffff" StrokeThickness="13" StrokeDashArray="7 4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.96" />
-                <Ellipse Width="150" Height="150" Stroke="#ff1d5c" StrokeThickness="6" StrokeDashArray="4 7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.95" />
+                <Ellipse Width="150" Height="150" Stroke="#8f42ff" StrokeThickness="6" StrokeDashArray="4 7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.95" />
                 <Ellipse Width="128" Height="128" Stroke="#27e7ff" StrokeThickness="5" StrokeDashArray="8 10" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.9" />
             </Grid>
 
@@ -1806,9 +2123,9 @@
                 <Grid.RenderTransform>
                     <ScaleTransform x:Name="PageLoadingLogoScale" ScaleX="1" ScaleY="1" />
                 </Grid.RenderTransform>
-                <Ellipse Fill="#dd0c0812" Stroke="#ff2a62" StrokeThickness="1.3">
+                <Ellipse Fill="#dd10081f" Stroke="#b967ff" StrokeThickness="1.3">
                     <Ellipse.Effect>
-                        <DropShadowEffect BlurRadius="24" ShadowDepth="0" Color="#ff1d5c" Opacity="0.45" />
+                        <DropShadowEffect BlurRadius="24" ShadowDepth="0" Color="#a855ff" Opacity="0.45" />
                     </Ellipse.Effect>
                 </Ellipse>
                 <Image Source="Assets/nyxnova-icon-transparent.png" Width="88" Height="88" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True" />
@@ -1824,7 +2141,19 @@
                        Opacity="0.88" />
         </Grid>
 
-        <Border x:Name="SlowLoadBar" Grid.Row="3" Panel.ZIndex="19" VerticalAlignment="Bottom" Margin="18" Background="#ee17121f" BorderBrush="#a968ff" BorderThickness="1" CornerRadius="16" Padding="14,10" Visibility="Collapsed">
+        <Border x:Name="SlowLoadBar"
+                Grid.Row="3"
+                Panel.ZIndex="19"
+                Width="820"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="64,0,22,22"
+                Background="#ee17121f"
+                BorderBrush="#a968ff"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="14,10"
+                Visibility="Collapsed">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#a968ff" Opacity="0.28" />
             </Border.Effect>
@@ -1856,7 +2185,7 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Top" />
 
-        <Border x:Name="StatusBar" Grid.Row="4" Background="#202124" BorderBrush="#34313d" BorderThickness="0,1,0,0">
+        <Border x:Name="StatusBar" Grid.Row="4" Background="#202124" BorderBrush="#34313d" BorderThickness="0,1,0,0" Visibility="Collapsed">
             <TextBlock x:Name="StatusText" Text="Bereit" Foreground="{StaticResource MutedText}" VerticalAlignment="Center" Padding="14,0" FontSize="12" />
         </Border>
     </Grid>

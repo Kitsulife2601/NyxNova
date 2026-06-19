@@ -101,7 +101,8 @@ public partial class App : Application
             AcceptLanguageList = "de-DE,de,en-US,en",
             UserAgent = ChromeUserAgent,
             LogFile = Path.Combine(LogsRoot, "cef.log"),
-            LogSeverity = LogSeverity.Warning
+            LogSeverity = LogSeverity.Warning,
+            BackgroundColor = Cef.ColorSetARGB(255, 11, 9, 17)
         };
 
         // Sicherheitsbewusst: keine no-sandbox, keine deaktivierte Web-Sicherheit und keine Anti-Detection-Hacks.

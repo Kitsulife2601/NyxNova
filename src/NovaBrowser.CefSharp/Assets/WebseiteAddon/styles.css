@@ -244,6 +244,7 @@ body.custom-video .image-bg {
 }
 
 .sidebar {
+  display: none;
   position: fixed;
   inset: 0 auto 0 0;
   width: min(360px, calc(100vw - 18px));
@@ -265,9 +266,15 @@ body.custom-video .image-bg {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(218, 189, 255, 0.45) transparent;
-  transform: translateX(-105%);
-  transition: transform 260ms ease;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(-100% - 36px));
+  transition: transform 260ms ease, opacity 180ms ease;
   z-index: 10;
+}
+
+.menu-overlay {
+  display: none;
 }
 
 .sidebar::-webkit-scrollbar {
@@ -280,6 +287,8 @@ body.custom-video .image-bg {
 }
 
 body.menu-open .sidebar {
+  opacity: 1;
+  pointer-events: auto;
   transform: translateX(0);
 }
 

@@ -1,9 +1,12 @@
 <UserControl x:Class="NovaBrowser.App.UI.ExtensionPopup"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border Background="#f7f7fb" CornerRadius="12" Padding="14">
+    <Border Background="#ee15101f" BorderBrush="#a968ff" BorderThickness="1.2" CornerRadius="18" Padding="14">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="0" Color="#a968ff" Opacity="0.32" />
+        </Border.Effect>
         <StackPanel>
-            <TextBlock Text="Erweiterungen" FontSize="18" FontWeight="Black" Foreground="#15151a" />
+            <TextBlock Text="Nova Addons" FontSize="18" FontWeight="Black" Foreground="#f8efff" />
             <ContentPresenter />
         </StackPanel>
     </Border>

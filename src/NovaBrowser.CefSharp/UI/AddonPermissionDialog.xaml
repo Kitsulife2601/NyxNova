@@ -22,17 +22,17 @@
         <StackPanel Margin="22,22,22,10">
             <TextBlock x:Name="DialogTitleText" Text="Nova Addon moechte Zugriff" Foreground="#ffe4d4" FontSize="22" FontWeight="Black" TextWrapping="Wrap">
                 <TextBlock.Effect>
-                    <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#ff5a24" Opacity="0.5" />
+                    <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#a855ff" Opacity="0.5" />
                 </TextBlock.Effect>
             </TextBlock>
             <TextBlock Text="Dieses Addon moechte folgende Berechtigungen:" Foreground="#cbb8df" Margin="0,8,0,0" />
         </StackPanel>
-        <Border Grid.Row="1" Margin="22,8" CornerRadius="18" Background="#21142d" BorderBrush="#ff6a2b" BorderThickness="1">
+        <Border Grid.Row="1" Margin="22,8" CornerRadius="18" Background="#21142d" BorderBrush="#b967ff" BorderThickness="1">
             <ListBox x:Name="PermissionsList" Margin="12" Background="Transparent" Foreground="#f3ecff" BorderThickness="0" />
         </Border>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="22">
             <Button Content="Abbrechen" Width="116" Height="38" Margin="0,0,10,0" Click="Cancel_Click" Background="#251226" Foreground="#f3ecff" BorderBrush="#b967ff" />
-            <Button Content="Installieren" Width="128" Height="38" Click="Install_Click" Background="#ff5a24" Foreground="White" BorderBrush="#ffd7c2" />
+            <Button Content="Installieren" Width="128" Height="38" Click="Install_Click" Background="#8f42ff" Foreground="White" BorderBrush="#ead8ff" />
         </StackPanel>
     </Grid>
 </Window>

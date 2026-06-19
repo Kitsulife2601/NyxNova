@@ -15,23 +15,19 @@ Dann im Browser oeffnen:
 http://127.0.0.1:8088
 ```
 
-## GitHub Pages
+## Online stellen
 
-1. Repository auf GitHub oeffnen.
-2. Settings -> Pages.
-3. Source: `Deploy from a branch`.
-4. Branch: `main`.
-5. Folder: `/docs`.
-6. Speichern.
+Den kompletten Inhalt dieses Ordners auf den Webspace hochladen.
+Wichtig: Der Ordner `downloads` muss mit hochgeladen werden, sonst kann der Installer nicht direkt geladen werden.
 
-Danach ist die Seite ueber GitHub Pages erreichbar.
+Hinweis: Der Installer ist groesser als 100 MB. Fuer GitHub Pages ist das als normale Repository-Datei zu gross. Fuer IONOS/Webspace ist der direkte Download geeignet.
 
 ## Download-Link
 
-Der Button `Zum Download` zeigt aktuell auf:
+Die Download-Buttons zeigen direkt auf:
 
 ```text
-https://github.com/Kitsulife2601/NyxNova/releases/latest
+downloads/NyxNova-beta-Setup.exe
 ```
 
-Wenn spaeter eine feste Installer-Datei genutzt werden soll, kann der Link in `index.html` angepasst werden.
+Dadurch wird kein GitHub-Fenster mehr geoeffnet, sondern der Installer direkt heruntergeladen.

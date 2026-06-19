@@ -27,6 +27,7 @@ namespace NovaBrowser.App;
 public partial class MainWindow : Window, INotifyPropertyChanged
 {
     private static readonly string AddonStartPageFile = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "WebseiteAddon", "popup.html");
+    private const string DarkBlankPage = "data:text/html;charset=utf-8,%3C!doctype%20html%3E%3Chtml%20style%3D%22background%3A%230b0911%22%3E%3Cbody%20style%3D%22margin%3A0%3Bbackground%3A%230b0911%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E";
 
     private static readonly string[] CommonTrackerHosts =
     {
@@ -62,6 +63,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         Interval = TimeSpan.FromMilliseconds(650)
     };
+    private readonly System.Windows.Threading.DispatcherTimer _googleAuthTimer = new()
+    {
+        Interval = TimeSpan.FromSeconds(2)
+    };
     private double _updateProgress;
     private readonly bool _isPrivateWindow;
     private const string AddonSiteAccessSettingsKey = "site-access";
@@ -74,6 +79,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _suppressOmniboxSuggestions;
     private BrowserTab? _tabDragCandidate;
     private Point _tabDragStartPoint;
+    private bool _googleAuthCheckRunning;
+    private bool? _lastGoogleSignedIn;
+    private string? _lastGoogleAuthProbeUrl;
 
     public MainWindow() : this(false)
     {
@@ -108,6 +116,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         MenuPanel.ZoomText = $"{Math.Round(100 * Math.Pow(1.2, _settingsService.Current.ZoomLevel))} %";
         UpdateWindowChromeState();
         _updateTimer.Tick += UpdateTimer_Tick;
+        _googleAuthTimer.Tick += GoogleAuthTimer_Tick;
+        _googleAuthTimer.Start();
         ShowBetaUpdateNotice();
     }
 
@@ -351,10 +361,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Databases = CefState.Enabled,
             WebGl = CefState.Enabled,
             ImageLoading = CefState.Enabled,
-            WindowlessFrameRate = 60
+            WindowlessFrameRate = 60,
+            BackgroundColor = Cef.ColorSetARGB(255, 11, 9, 17)
         };
 
-        var browser = new ChromiumWebBrowser("about:blank")
+        var browser = new ChromiumWebBrowser(DarkBlankPage)
         {
             BrowserSettings = browserSettings,
             LifeSpanHandler = new NovaLifeSpanHandler(Dispatcher, OpenInNewTab, RecordDiagnostic, HandleAuthCallback),
@@ -430,6 +441,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
 
             CheckGoogleBlockedAddress(address);
+            QueueGoogleAuthCheck(address);
         }, "browser-address-changed"));
 
         browser.TitleChanged += (_, args) =>
@@ -527,6 +539,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     NotifyCollectionViews();
                     UpdateBookmarkButton();
                     ShowTrackerToast(GetTrackerCountHint(tab.Url));
+                    QueueGoogleAuthCheck(tab.Url, forceToast: true);
                 }
             }, "browser-loading-state");
         };
@@ -567,6 +580,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (isMainFrame && IsGoogleHost(frameUrl))
             {
                 await CheckGoogleBlockedPage(args.Frame);
+                QueueGoogleAuthCheck(frameUrl, forceToast: true);
             }
 
             if (isMainFrame && NovaVideoCompatibilityRequestHandler.IsLikelyVideoPage(frameUrl))
@@ -1160,14 +1174,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (_mediaProbeBrowser is null)
         {
-            _mediaProbeBrowser = new ChromiumWebBrowser("about:blank")
+            _mediaProbeBrowser = new ChromiumWebBrowser(DarkBlankPage)
             {
                 BrowserSettings = new CefSharp.BrowserSettings
                 {
                     Javascript = CefState.Enabled,
                     LocalStorage = CefState.Enabled,
                     WebGl = CefState.Enabled,
-                    WindowlessFrameRate = 60
+                    WindowlessFrameRate = 60,
+                    BackgroundColor = Cef.ColorSetARGB(255, 11, 9, 17)
                 }
             };
         }
@@ -1539,6 +1554,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private sealed class CookieNameVisitor : ICookieVisitor
+    {
+        private readonly HashSet<string> _names = new(StringComparer.OrdinalIgnoreCase);
+        private readonly TaskCompletionSource<HashSet<string>> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<HashSet<string>> Completion => _completion.Task;
+
+        public bool Visit(CefSharp.Cookie cookie, int count, int total, ref bool deleteCookie)
+        {
+            _names.Add(cookie.Name);
+            if (count >= total - 1)
+            {
+                _completion.TrySetResult(_names);
+            }
+
+            return true;
+        }
+
+        public void Dispose()
+        {
+            _completion.TrySetResult(_names);
+        }
+    }
+
     private void SelectTab(BrowserTab tab)
     {
         foreach (var existing in Tabs)
@@ -1749,6 +1788,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SettingsPage.Visibility = Visibility.Collapsed;
         UpdatePage.Visibility = Visibility.Collapsed;
         ExtensionsPage.Visibility = Visibility.Collapsed;
+        ModsPage.Visibility = Visibility.Collapsed;
+        ShadersPage.Visibility = Visibility.Collapsed;
+        StorePage.Visibility = Visibility.Collapsed;
+        AddonDetailPage.Visibility = Visibility.Collapsed;
 
         var route = StripInternalUrlSuffix(url).ToLowerInvariant();
         switch (route)
@@ -1780,6 +1823,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             case "nova://extensions":
                 ExtensionsPage.Visibility = Visibility.Visible;
                 RefreshInstalledAddonList();
+                break;
+            case "nova://mods":
+                ModsPage.Visibility = Visibility.Visible;
+                break;
+            case "nova://shaders":
+                ShadersPage.Visibility = Visibility.Visible;
                 break;
             case "nova://store":
                 StorePage.Visibility = Visibility.Visible;
@@ -1937,15 +1986,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
-            ReloadButton.Foreground = new SolidColorBrush(Color.FromRgb(226, 196, 255));
-            var spin = new DoubleAnimation(0, 360, TimeSpan.FromMilliseconds(850))
+            ReloadButton.Content = "\uE711";
+            ReloadButton.ToolTip = "Laden stoppen";
+            ReloadButton.Foreground = new SolidColorBrush(Color.FromRgb(239, 223, 255));
+            ReloadButton.Effect = new DropShadowEffect
             {
+                BlurRadius = 18,
+                ShadowDepth = 0,
+                Color = Color.FromRgb(185, 103, 255),
+                Opacity = 0.72
+            };
+
+            var pulse = new DoubleAnimation(0.68, 1, TimeSpan.FromMilliseconds(680))
+            {
+                AutoReverse = true,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
                 RepeatBehavior = RepeatBehavior.Forever
             };
-            Storyboard.SetTarget(spin, ReloadButtonSpin);
-            Storyboard.SetTargetProperty(spin, new PropertyPath(RotateTransform.AngleProperty));
+            Storyboard.SetTarget(pulse, ReloadButton);
+            Storyboard.SetTargetProperty(pulse, new PropertyPath(UIElement.OpacityProperty));
             _reloadStoryboard = new Storyboard();
-            _reloadStoryboard.Children.Add(spin);
+            _reloadStoryboard.Children.Add(pulse);
             _reloadStoryboard.Begin(this, true);
 
             PageLoadingGlow.Visibility = Visibility.Visible;
@@ -2027,7 +2088,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _pageLoadingStoryboard?.Stop(this);
         _pageLoadingStoryboard = null;
         ReloadButtonSpin.Angle = 0;
-        ReloadButton.Foreground = new SolidColorBrush(Color.FromRgb(255, 42, 98));
+        ReloadButton.Content = "\uE72C";
+        ReloadButton.ToolTip = "Neu laden";
+        ReloadButton.Opacity = 1;
+        ReloadButton.Effect = null;
+        ReloadButton.Foreground = new SolidColorBrush(Color.FromRgb(192, 140, 255));
         PageLoadingGlow.Visibility = Visibility.Collapsed;
         PageLoadingGlow.Opacity = 0;
         PageLoadingScale.ScaleX = 0.05;
@@ -2113,6 +2178,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             "nova://settings" => "Settings",
             "nova://update" => "Beta Update",
             "nova://extensions" => "Extensions",
+            "nova://mods" => "NX Mods",
+            "nova://shaders" => "NX Shader",
             "nova://store" => "NovaStore",
             var detail when detail.StartsWith("nova://store/addon/", StringComparison.OrdinalIgnoreCase) => "Addon Details",
             _ => "Start Page"
@@ -2136,6 +2203,136 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             // Some account pages block script inspection; navigation remains internal and secure.
         }
+    }
+
+    private void GoogleAuthTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_activeTab is { Url: var url } && IsGoogleHost(url))
+        {
+            QueueGoogleAuthCheck(url);
+        }
+    }
+
+    private void QueueGoogleAuthCheck(string? url, bool forceToast = false)
+    {
+        if (!IsGoogleHost(url))
+        {
+            return;
+        }
+
+        _lastGoogleAuthProbeUrl = url;
+        _ = CheckGoogleAuthStateAsync(url!, forceToast);
+    }
+
+    private async Task CheckGoogleAuthStateAsync(string url, bool forceToast)
+    {
+        if (_googleAuthCheckRunning)
+        {
+            return;
+        }
+
+        _googleAuthCheckRunning = true;
+        try
+        {
+            var signedIn = await HasGoogleSignInCookiesAsync();
+            RunOnUi(() => UpdateGoogleAuthToast(signedIn, url, forceToast), "google-auth-state");
+        }
+        catch (Exception ex)
+        {
+            App.LogException("google-auth-state", ex);
+        }
+        finally
+        {
+            _googleAuthCheckRunning = false;
+        }
+    }
+
+    private static async Task<bool> HasGoogleSignInCookiesAsync()
+    {
+        var manager = Cef.GetGlobalCookieManager();
+        if (manager is null)
+        {
+            return false;
+        }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var cookieUrl in new[]
+                 {
+                     "https://accounts.google.com",
+                     "https://www.google.com",
+                     "https://youtube.com",
+                     "https://www.youtube.com"
+                 })
+        {
+            foreach (var name in await ReadCookieNamesAsync(manager, cookieUrl))
+            {
+                names.Add(name);
+            }
+        }
+
+        return names.Contains("SID") ||
+               names.Contains("LSID") ||
+               names.Contains("SSID") ||
+               names.Contains("HSID") ||
+               names.Contains("APISID") ||
+               names.Contains("SAPISID") ||
+               names.Contains("__Secure-1PSID") ||
+               names.Contains("__Secure-3PSID");
+    }
+
+    private static async Task<HashSet<string>> ReadCookieNamesAsync(ICookieManager manager, string url)
+    {
+        var visitor = new CookieNameVisitor();
+        if (!manager.VisitUrlCookies(url, includeHttpOnly: true, visitor))
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            return await visitor.Completion.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+        catch (TimeoutException)
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private void UpdateGoogleAuthToast(bool signedIn, string url, bool forceToast)
+    {
+        if (!IsGoogleHost(url))
+        {
+            return;
+        }
+
+        var changed = _lastGoogleSignedIn != signedIn;
+        _lastGoogleSignedIn = signedIn;
+        if (!changed && !forceToast)
+        {
+            return;
+        }
+
+        GoogleAuthToastTitle.Text = signedIn ? "Google angemeldet" : "Google nicht angemeldet";
+        GoogleAuthToastHint.Text = signedIn
+            ? "Nova erkennt die echte Google-Sitzung in der persistenten Browser-Session."
+            : "Nova wartet auf die Google-Anmeldung und prueft die Sitzung live.";
+        StatusText.Text = signedIn ? "Google-Anmeldung aktiv." : "Google-Anmeldung noch nicht aktiv.";
+        ShowGoogleAuthToast();
+    }
+
+    private void ShowGoogleAuthToast()
+    {
+        GoogleAuthToast.Visibility = Visibility.Visible;
+        GoogleAuthToast.BeginAnimation(OpacityProperty, null);
+        GoogleAuthToast.Opacity = 1;
+
+        var animation = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(520))
+        {
+            BeginTime = TimeSpan.FromSeconds(3.2),
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+        animation.Completed += (_, _) => GoogleAuthToast.Visibility = Visibility.Collapsed;
+        GoogleAuthToast.BeginAnimation(OpacityProperty, animation);
     }
 
     private void CheckGoogleBlockedAddress(string address)
@@ -2392,6 +2589,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_activeTab is null)
         {
+            return;
+        }
+
+        if (_activeTab.Browser?.IsLoading == true)
+        {
+            _activeTab.Browser.Stop();
+            SetLoadingAnimation(false);
+            StatusText.Text = "Laden gestoppt.";
             return;
         }
 
@@ -2838,9 +3043,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ExtensionsButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ExtensionsPopup.Visibility == Visibility.Visible)
+        if (ExtensionsPopupHost.IsOpen || ExtensionsPopup.Visibility == Visibility.Visible)
         {
             ExtensionsPopup.Visibility = Visibility.Collapsed;
+            ExtensionsPopupHost.IsOpen = false;
             StatusText.Text = "Erweiterungen geschlossen.";
             return;
         }
@@ -2849,12 +3055,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         UpdateExtensionAccessState();
         RefreshExtensionsPopup();
         ExtensionsPopup.Visibility = Visibility.Visible;
+        ExtensionsPopupHost.IsOpen = true;
         StatusText.Text = "Erweiterungen geoeffnet.";
     }
 
     private void CloseExtensionsPopup_Click(object sender, RoutedEventArgs e)
     {
         ExtensionsPopup.Visibility = Visibility.Collapsed;
+        ExtensionsPopupHost.IsOpen = false;
     }
 
     private void ExtensionAccessToggle_Click(object sender, RoutedEventArgs e)
@@ -2993,6 +3201,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void MainMenu_MoreToolsRequested(object sender, EventArgs e) => MoreTools_Click(sender, new RoutedEventArgs());
 
+    private void MainMenu_StoreRequested(object sender, EventArgs e) => OpenStore_Click(sender, new RoutedEventArgs());
+
+    private void MainMenu_DevToolsRequested(object sender, EventArgs e) => OpenDevTools_Click(sender, new RoutedEventArgs());
+
+    private void MainMenu_DiagnosticsRequested(object sender, EventArgs e) => OpenDiagnostics_Click(sender, new RoutedEventArgs());
+
+    private void MainMenu_MediaDiagnosticsRequested(object sender, EventArgs e) => OpenMediaDiagnostics_Click(sender, new RoutedEventArgs());
+
+    private void MainMenu_SavePageRequested(object sender, EventArgs e) => SavePage_Click(sender, new RoutedEventArgs());
+
+    private void MainMenu_CopyLinkRequested(object sender, EventArgs e)
+    {
+        CloseTransientPanels();
+        CopyCurrentUrlToClipboard();
+    }
+
     private void MainMenu_HelpRequested(object sender, EventArgs e) => Help_Click(sender, new RoutedEventArgs());
 
     private void MainMenu_SettingsRequested(object sender, EventArgs e) => Settings_Click(sender, new RoutedEventArgs());
@@ -3001,8 +3225,55 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void History_Click(object sender, RoutedEventArgs e)
     {
-        MenuPanel.Visibility = Visibility.Collapsed;
+        CloseTransientPanels(HistorySidePanel);
+        SideHistoryListBox.ItemsSource = History;
+        HistorySidePanel.Visibility = HistorySidePanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        StatusText.Text = HistorySidePanel.Visibility == Visibility.Visible ? "Verlauf geoeffnet." : "Verlauf geschlossen.";
+    }
+
+    private void CloseHistorySidePanel_Click(object sender, RoutedEventArgs e)
+    {
+        HistorySidePanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void OpenFullHistory_Click(object sender, RoutedEventArgs e)
+    {
+        HistorySidePanel.Visibility = Visibility.Collapsed;
         NavigateActive("nova://history");
+    }
+
+    private void SideHistorySearchBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (SideHistorySearchBox.Text == "Verlauf durchsuchen")
+        {
+            SideHistorySearchBox.Clear();
+        }
+    }
+
+    private void SideHistorySearchBox_KeyUp(object sender, KeyEventArgs e)
+    {
+        var query = SideHistorySearchBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(query) || query == "Verlauf durchsuchen")
+        {
+            SideHistoryListBox.ItemsSource = History;
+            return;
+        }
+
+        SideHistoryListBox.ItemsSource = History
+            .Where(item => item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                           item.Url.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void SideHistoryList_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListBox { SelectedItem: HistoryItem item })
+        {
+            HistorySidePanel.Visibility = Visibility.Collapsed;
+            NavigateActive(item.Url);
+        }
     }
 
     private void Downloads_Click(object sender, RoutedEventArgs e)
@@ -3220,7 +3491,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var stack = new StackPanel();
         content.Child = stack;
         stack.Children.Add(new TextBlock { Text = "Downloads", Foreground = FindBrush("NovaText"), FontSize = 19, FontWeight = FontWeights.Black });
-        stack.Children.Add(new TextBlock { Text = "Aktive und letzte Dateien", Foreground = FindBrush("MutedText"), FontSize = 12, Margin = new Thickness(0, 2, 0, 12) });
 
         if (!Downloads.Any())
         {
@@ -3233,16 +3503,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 stack.Children.Add(CreateDownloadFlyoutRow(item));
             }
         }
-
-        var allButton = CreateFlyoutActionButton("Alle Downloads anzeigen");
-        allButton.HorizontalAlignment = HorizontalAlignment.Stretch;
-        allButton.Margin = new Thickness(0, 10, 0, 0);
-        allButton.Click += (_, _) =>
-        {
-            CloseDownloadsFlyout();
-            NavigateActive("nova://downloads");
-        };
-        stack.Children.Add(allButton);
 
         _downloadsFlyoutWindow = ShowFlyoutWindow(content, DownloadsButton, 390);
         _downloadsFlyoutWindow.Closed += (_, _) => _downloadsFlyoutWindow = null;
@@ -3670,6 +3930,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void WindowDragArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            ToggleMaximized();
+            e.Handled = true;
+            return;
+        }
+
+        try
+        {
+            DragMove();
+            e.Handled = true;
+        }
+        catch
+        {
+            // DragMove can throw if the click turns into another mouse operation.
+        }
+    }
+
     private void MinimizeWindow_Click(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Minimized;
@@ -3740,11 +4020,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ToolbarBar.Visibility = Visibility.Visible;
             BookmarkBar.Visibility = Visibility.Collapsed;
             SidebarPlaceholder.Visibility = Visibility.Visible;
-            StatusBar.Visibility = Visibility.Visible;
+            StatusBar.Visibility = Visibility.Collapsed;
             TitleBarRow.Height = new GridLength(40);
             ToolbarRow.Height = new GridLength(42);
             BookmarkRow.Height = new GridLength(0);
-            StatusRow.Height = new GridLength(26);
+            StatusRow.Height = new GridLength(0);
             SidebarColumn.Width = new GridLength(48);
             WindowFrame.BorderThickness = WindowState == WindowState.Maximized ? new Thickness(0) : new Thickness(1);
             _isFullscreen = false;
@@ -3819,6 +4099,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                      ExtensionsPopup,
                      ExtensionActionPopup,
                      BookmarkPopup,
+                     HistorySidePanel,
                      DownloadsPopup,
                      OmniboxPopup
                  })
