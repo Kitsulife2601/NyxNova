@@ -1,7 +1,7 @@
 param(
     [string]$Owner = "Kitsulife2601",
     [string]$Repo = "NyxNova",
-    [string]$Tag = "v1.0.9-beta",
+    [string]$Tag = "",
     [string]$Commitish = "main"
 )
 
@@ -10,18 +10,23 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $releaseDir = Join-Path $projectRoot "installer\Releases"
 $vaultPath = Join-Path $projectRoot "upload-token-vault.json"
+$projectFile = Join-Path $projectRoot "src\NovaBrowser.CefSharp\NovaBrowser.CefSharp.csproj"
 
 if (-not (Test-Path -LiteralPath $releaseDir)) {
     throw "Release-Ordner nicht gefunden: $releaseDir"
 }
 
-$assetNames = @(
-    "RELEASES-beta",
-    "assets.beta.json",
-    "releases.beta.json",
-    "NyxNova-1.0.9-beta-full.nupkg",
-    "NyxNova-beta-Setup.exe"
-)
+if ([string]::IsNullOrWhiteSpace($Tag)) {
+    if (-not (Test-Path -LiteralPath $projectFile)) {
+        throw "Projektdatei nicht gefunden, um die Version zu ermitteln: $projectFile. Bitte -Tag explizit angeben."
+    }
+    $projectVersion = ([xml](Get-Content -LiteralPath $projectFile)).Project.PropertyGroup.Version
+    $Tag = "v$projectVersion-beta"
+}
+
+# Alle Dateien aus dem Releases-Ordner hochladen, nicht eine fest einprogrammierte Liste,
+# damit sich neue/umbenannte Pakete (z.B. Portable.zip) bei jeder Version automatisch ergeben.
+$assetNames = (Get-ChildItem -LiteralPath $releaseDir -File).Name
 
 $assetsToUpload = foreach ($name in $assetNames) {
     $path = Join-Path $releaseDir $name
