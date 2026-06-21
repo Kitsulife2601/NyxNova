@@ -4,11 +4,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
@@ -93,6 +95,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         _isPrivateWindow = isPrivateWindow;
         InitializeComponent();
+        SourceInitialized += (_, _) => ApplyRoundedCorners();
         DataContext = this;
         LoadServices();
         Downloads.CollectionChanged += Downloads_CollectionChanged;
@@ -1665,6 +1668,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         AddressBox.Text = url;
         _suppressOmniboxSuggestions = false;
         browser.Load(url);
+    }
+
+    [DllImport("dwmapi.dll", PreserveSig = true)]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
+
+    private const int DwmwaWindowCornerPreference = 33;
+    private const int DwmwcpRound = 2;
+
+    private void ApplyRoundedCorners()
+    {
+        try
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            var preference = DwmwcpRound;
+            DwmSetWindowAttribute(hwnd, DwmwaWindowCornerPreference, ref preference, sizeof(int));
+        }
+        catch (Exception ex)
+        {
+            App.LogException("rounded-corners", ex);
+        }
     }
 
     public void ActivateFromSecondInstance(string? url)
