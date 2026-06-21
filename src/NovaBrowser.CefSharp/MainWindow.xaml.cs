@@ -3864,6 +3864,55 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         StatusText.Text = "Hilfe: Nova interne Seiten nutzen nova://start, nova://store, nova://extensions, nova://settings.";
     }
 
+    private void SettingsNavDesign_Click(object sender, MouseButtonEventArgs e) => SettingsDesignSection.BringIntoView();
+    private void SettingsNavSearch_Click(object sender, MouseButtonEventArgs e) => SettingsSearchSection.BringIntoView();
+    private void SettingsNavBookmarks_Click(object sender, MouseButtonEventArgs e) => SettingsStartSection.BringIntoView();
+    private void SettingsNavAddons_Click(object sender, MouseButtonEventArgs e) => SettingsAddonsSection.BringIntoView();
+    private void SettingsNavPrivacy_Click(object sender, MouseButtonEventArgs e) => SettingsPrivacySection.BringIntoView();
+    private void SettingsNavBuild_Click(object sender, MouseButtonEventArgs e) => SettingsBuildSection.BringIntoView();
+
+    private void SettingsSearchBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (SettingsSearchBox.Text == "Einstellungen durchsuchen")
+        {
+            SettingsSearchBox.Clear();
+        }
+    }
+
+    private void SettingsSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        FilterSettingsSections(SettingsSearchBox.Text);
+    }
+
+    private void FilterSettingsSections(string query)
+    {
+        query = (query ?? "").Trim();
+        if (string.IsNullOrEmpty(query) || query == "Einstellungen durchsuchen")
+        {
+            SettingsDesignSection.Visibility = Visibility.Visible;
+            SettingsSearchSection.Visibility = Visibility.Visible;
+            SettingsStartSection.Visibility = Visibility.Visible;
+            SettingsAddonsSection.Visibility = Visibility.Visible;
+            SettingsPrivacySection.Visibility = Visibility.Visible;
+            SettingsBuildSection.Visibility = Visibility.Visible;
+            return;
+        }
+
+        bool Matches(string keywords) => keywords.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+        SettingsDesignSection.Visibility = Matches("Design Theme Nova Neon Aurora Fokus Glas Hintergrund") ? Visibility.Visible : Visibility.Collapsed;
+        SettingsSearchSection.Visibility = Matches("Suche Suchmaschine Adressleiste Google DuckDuckGo Bing") ? Visibility.Visible : Visibility.Collapsed;
+        SettingsStartSection.Visibility = Matches("Start und Oberflaeche Startseite Lesezeichenleiste") ? Visibility.Visible : Visibility.Collapsed;
+        SettingsAddonsSection.Visibility = Matches("Nova Addons Erweiterungen Store gepinnte Quick Links") ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPrivacySection.Visibility = Matches("Datenschutz und Medien Cookies Cache LocalStorage WebSecurity Diagnose") ? Visibility.Visible : Visibility.Collapsed;
+        SettingsBuildSection.Visibility = Matches("Build und Beta Update Version") ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void AddonSearchBox_GotFocus(object sender, RoutedEventArgs e)
     {
         if (AddonSearchBox.Text == "Addons suchen")
