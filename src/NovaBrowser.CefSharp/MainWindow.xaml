@@ -502,9 +502,8 @@
 
     <Border x:Name="WindowFrame"
             Background="#0b0911"
-            BorderBrush="#8f42ff"
-            BorderThickness="1"
-            CornerRadius="2"
+            BorderThickness="0"
+            CornerRadius="12"
             RenderTransformOrigin="0.5,0.5"
             PreviewMouseDown="RootGrid_PreviewMouseDown">
     <Border.RenderTransform>

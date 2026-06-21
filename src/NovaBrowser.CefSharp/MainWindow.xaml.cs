@@ -4209,7 +4209,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             BookmarkRow.Height = new GridLength(0);
             StatusRow.Height = new GridLength(0);
             SidebarColumn.Width = new GridLength(48);
-            WindowFrame.BorderThickness = WindowState == WindowState.Maximized ? new Thickness(0) : new Thickness(1);
+            WindowFrame.BorderThickness = new Thickness(0);
             _isFullscreen = false;
         }
 
@@ -4234,8 +4234,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         else
         {
-            WindowFrame.CornerRadius = new CornerRadius(2);
-            WindowFrame.BorderThickness = new Thickness(1);
+            WindowFrame.CornerRadius = new CornerRadius(12);
+            WindowFrame.BorderThickness = new Thickness(0);
             MaximizeButton.Content = "\uE922";
         }
     }
