@@ -1,7 +1,6 @@
 param(
     [string]$Repository = "Kitsulife2601/NyxNova",
-    [string]$Branch = "main",
-    [string]$GitHubToken = "PASTE_GITHUB_TOKEN_HERE"
+    [string]$Branch = "main"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,7 +16,7 @@ Add-Type -AssemblyName System.Drawing
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$script:GitHubToken = $GitHubToken
+$script:GitHubToken = $null
 $script:desktopShortcut = $true
 $script:installPath = Join-Path $env:LOCALAPPDATA "Programs\NyxNova"
 $script:acceptedTerms = $false
@@ -25,7 +24,103 @@ $script:launchAfterInstall = $true
 $script:cleanInstall = $false
 $script:stateDir = Join-Path $env:LOCALAPPDATA "NyxNovaInstaller"
 $script:stateFile = Join-Path $script:stateDir "install.json"
+$script:tokenFile = Join-Path $script:stateDir "github-token.dpapi"
 $script:splashPath = Join-Path $PSScriptRoot "nyxnova-installer-splash.png"
+
+function ConvertFrom-SecureStringPlainText {
+    param([System.Security.SecureString]$SecureString)
+    if ($null -eq $SecureString) { return "" }
+
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureString)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    } finally {
+        if ($bstr -ne [IntPtr]::Zero) {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+        }
+    }
+}
+
+function Get-StoredGitHubToken {
+    if (-not (Test-Path -LiteralPath $script:tokenFile)) {
+        return $null
+    }
+
+    try {
+        $secure = Get-Content -LiteralPath $script:tokenFile -Raw | ConvertTo-SecureString
+        $plain = ConvertFrom-SecureStringPlainText $secure
+        if ([string]::IsNullOrWhiteSpace($plain)) { return $null }
+        return $plain
+    } catch {
+        return $null
+    }
+}
+
+function Save-GitHubToken {
+    param([string]$Token)
+    if ([string]::IsNullOrWhiteSpace($Token)) { return }
+    if (-not (Test-Path -LiteralPath $script:stateDir)) {
+        [System.IO.Directory]::CreateDirectory($script:stateDir) | Out-Null
+    }
+
+    $secure = ConvertTo-SecureString $Token -AsPlainText -Force
+    $secure | ConvertFrom-SecureString | Set-Content -LiteralPath $script:tokenFile -Encoding UTF8
+}
+
+function Show-GitHubTokenPage {
+    $storedToken = Get-StoredGitHubToken
+    if (-not [string]::IsNullOrWhiteSpace($storedToken)) {
+        $script:GitHubToken = $storedToken
+        return [System.Windows.Forms.DialogResult]::OK
+    }
+
+    $form = New-InstallerForm "GitHub Zugriff"
+    Add-Title $form "GitHub Token" "Falls das Repository privat ist oder GitHub den Download begrenzt, gib einen Token ein. Er wird verdeckt eingegeben und optional Windows-verschluesselt gespeichert."
+
+    $label = New-Object System.Windows.Forms.Label
+    $label.Text = "GitHub Token:"
+    $label.AutoSize = $true
+    $label.Location = New-Object System.Drawing.Point(264, 138)
+    $form.Controls.Add($label)
+
+    $tokenBox = New-Object System.Windows.Forms.TextBox
+    $tokenBox.UseSystemPasswordChar = $true
+    $tokenBox.Size = New-Object System.Drawing.Size(360, 26)
+    $tokenBox.Location = New-Object System.Drawing.Point(264, 164)
+    $form.Controls.Add($tokenBox)
+
+    $saveCheck = New-Object System.Windows.Forms.CheckBox
+    $saveCheck.Text = "Token lokal fuer diesen Windows-Benutzer verschluesselt merken"
+    $saveCheck.Checked = $true
+    $saveCheck.AutoSize = $true
+    $saveCheck.Location = New-Object System.Drawing.Point(264, 202)
+    $form.Controls.Add($saveCheck)
+
+    $hint = New-Object System.Windows.Forms.Label
+    $hint.Text = "Leer lassen ist erlaubt. Dann wird ohne Token heruntergeladen."
+    $hint.AutoSize = $false
+    $hint.Size = New-Object System.Drawing.Size(430, 42)
+    $hint.Location = New-Object System.Drawing.Point(264, 232)
+    $form.Controls.Add($hint)
+
+    Add-NavButtons $form {
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::Retry
+        $form.Close()
+    } {
+        $token = $tokenBox.Text.Trim()
+        if (-not [string]::IsNullOrWhiteSpace($token)) {
+            $script:GitHubToken = $token
+            if ($saveCheck.Checked) {
+                Save-GitHubToken $token
+            }
+        }
+
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        $form.Close()
+    }
+
+    return $form.ShowDialog()
+}
 
 function New-GitHubClient {
     $client = New-Object System.Net.WebClient
@@ -789,11 +884,12 @@ while ($true) {
         0 { Show-ShortcutPage }
         1 { Show-InstallPathPage }
         2 { Show-TermsPage }
+        3 { Show-GitHubTokenPage }
         default { break }
     }
     if ($result -eq [System.Windows.Forms.DialogResult]::Cancel) { exit 0 }
     if ($result -eq [System.Windows.Forms.DialogResult]::Retry) { $step-- } else { $step++ }
-    if ($step -gt 2) { break }
+    if ($step -gt 3) { break }
 }
 
 $installResult = [System.Windows.Forms.DialogResult]::Retry
