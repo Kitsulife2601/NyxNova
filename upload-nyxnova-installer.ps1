@@ -220,8 +220,12 @@ function Send-FileWithProgress {
             [void]$client.DefaultRequestHeaders.TryAddWithoutValidation($name, [string]$Headers[$name])
         }
 
+        $callbackRunspace = [System.Management.Automation.Runspaces.Runspace]::DefaultRunspace
         $progressCallback = [Action[Int64, Int64]]{
             param([Int64]$uploaded, [Int64]$total)
+            if ($null -eq [System.Management.Automation.Runspaces.Runspace]::DefaultRunspace) {
+                [System.Management.Automation.Runspaces.Runspace]::DefaultRunspace = $callbackRunspace
+            }
             $now = Get-Date
             if (($now - $script:lastDraw).TotalMilliseconds -ge 250 -or $uploaded -eq $total) {
                 $percent = if ($total -gt 0) { ($uploaded / $total) * 100 } else { 100 }
