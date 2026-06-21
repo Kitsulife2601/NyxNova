@@ -47,7 +47,8 @@ function Get-StoredGitHubToken {
     }
 
     try {
-        $secure = Get-Content -LiteralPath $script:tokenFile -Raw | ConvertTo-SecureString
+        $raw = (Get-Content -LiteralPath $script:tokenFile -Raw).Trim()
+        $secure = $raw | ConvertTo-SecureString
         $plain = ConvertFrom-SecureStringPlainText $secure
         if ([string]::IsNullOrWhiteSpace($plain)) { return $null }
         return $plain
@@ -64,7 +65,7 @@ function Save-GitHubToken {
     }
 
     $secure = ConvertTo-SecureString $Token -AsPlainText -Force
-    $secure | ConvertFrom-SecureString | Set-Content -LiteralPath $script:tokenFile -Encoding UTF8
+    $secure | ConvertFrom-SecureString | Set-Content -LiteralPath $script:tokenFile -Encoding UTF8 -NoNewline
 }
 
 function Show-GitHubTokenPage {
