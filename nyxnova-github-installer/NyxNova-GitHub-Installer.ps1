@@ -3,6 +3,8 @@ param(
     [string]$Branch = "main"
 )
 
+$script:BranchExplicitlySet = $PSBoundParameters.ContainsKey('Branch')
+
 $ErrorActionPreference = "Stop"
 $ConfirmPreference = "None"
 $Global:ConfirmPreference = "None"
@@ -130,6 +132,28 @@ function New-GitHubClient {
         $client.Headers.Add("Authorization", "Bearer $script:GitHubToken")
     }
     return $client
+}
+
+function Resolve-InstallRef {
+    param([string]$Repository, [string]$FallbackBranch)
+
+    if ($script:BranchExplicitlySet) {
+        return [pscustomobject]@{ Ref = $FallbackBranch; IsTag = $false }
+    }
+
+    try {
+        $client = New-GitHubClient
+        $client.Headers.Add("Accept", "application/vnd.github+json")
+        $json = $client.DownloadString("https://api.github.com/repos/$Repository/releases/latest")
+        $release = $json | ConvertFrom-Json
+        if (-not [string]::IsNullOrWhiteSpace($release.tag_name)) {
+            return [pscustomobject]@{ Ref = $release.tag_name; IsTag = $true }
+        }
+    } catch {
+        # Kein Release gefunden oder GitHub-API nicht erreichbar - falle auf den Branch zurueck.
+    }
+
+    return [pscustomobject]@{ Ref = $FallbackBranch; IsTag = $false }
 }
 
 function Show-InstallerMessage {
@@ -711,9 +735,15 @@ function Install-NyxNova {
             Get-ChildItem -LiteralPath $tempBase -Directory -Filter "NyxNovaInstaller-*" -ErrorAction SilentlyContinue |
                 Where-Object { $_.FullName -ne $tempRoot } | ForEach-Object { Remove-TempFiles $_.FullName | Out-Null }
 
+            # Neuestes Release-Tag auflösen (faellt auf den Branch zurueck, falls keins existiert)
+            Set-InstallerProgress $bar $status 8 "Neueste Version ermitteln..."
+            $installRef = Resolve-InstallRef -Repository $Repository -FallbackBranch $Branch
+            $refKind = if ($installRef.IsTag) { "tags" } else { "heads" }
+            Write-ProgressText $log "Installiere Version: $($installRef.Ref) ($refKind)"
+
             # Repo als ZIP herunterladen (kein API Rate Limit)
             Set-InstallerProgress $bar $status 10 "NyxNova von GitHub herunterladen..."
-            $zipUrl = "https://github.com/$Repository/archive/refs/heads/$Branch.zip"
+            $zipUrl = "https://github.com/$Repository/archive/refs/$refKind/$($installRef.Ref).zip"
             $zipPath = Join-Path $tempRoot "source.zip"
             Write-ProgressText $log "Download: $zipUrl"
             Invoke-DownloadWithProgress $zipUrl $zipPath $bar $status $log 10 35 "Quellcode herunterladen"
@@ -725,9 +755,9 @@ function Install-NyxNova {
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractPath)
 
-            # Projektdatei finden (GitHub ZIP enthaelt Ordner "RepoName-Branch")
+            # Projektdatei finden (GitHub ZIP enthaelt Ordner "RepoName-Ref")
             $repoName = ($Repository -split "/")[-1]
-            $sourceRoot = Join-Path $extractPath "$repoName-$Branch"
+            $sourceRoot = Join-Path $extractPath "$repoName-$($installRef.Ref)"
             $projectFile = Join-Path $sourceRoot "src\NovaBrowser.CefSharp\NovaBrowser.CefSharp.csproj"
 
             if (-not (Test-Path -LiteralPath $projectFile)) {
