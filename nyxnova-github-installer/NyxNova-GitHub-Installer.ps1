@@ -142,11 +142,14 @@ function Resolve-InstallRef {
     }
 
     try {
+        # /releases/latest ignoriert Pre-Releases. NyxNova ist durchgehend Beta, also
+        # nehmen wir die volle Liste (neueste zuerst) statt nur die "latest" non-prerelease.
         $client = New-GitHubClient
         $client.Headers.Add("Accept", "application/vnd.github+json")
-        $json = $client.DownloadString("https://api.github.com/repos/$Repository/releases/latest")
-        $release = $json | ConvertFrom-Json
-        if (-not [string]::IsNullOrWhiteSpace($release.tag_name)) {
+        $json = $client.DownloadString("https://api.github.com/repos/$Repository/releases?per_page=1")
+        $releases = $json | ConvertFrom-Json
+        $release = if ($releases -is [array]) { $releases | Select-Object -First 1 } else { $releases }
+        if ($release -and -not [string]::IsNullOrWhiteSpace($release.tag_name)) {
             return [pscustomobject]@{ Ref = $release.tag_name; IsTag = $true }
         }
     } catch {
