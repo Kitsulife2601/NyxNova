@@ -4,7 +4,9 @@ param(
 
     [string]$ReleaseFolder = "",
 
-    [switch]$Apply
+    [switch]$Apply,
+
+    [int]$KeepBackups = 2
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,7 +15,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Resolve-Path (Join-Path $scriptDir "..")
 
 if ([string]::IsNullOrWhiteSpace($ReleaseFolder)) {
-    $ReleaseFolder = Join-Path $projectRoot "publish\win-x64-release-20260615-180247"
+    $ReleaseFolder = Join-Path $projectRoot "publish\win-x64-release"
 }
 
 $source = Resolve-Path -LiteralPath $SourceRuntime
@@ -75,6 +77,17 @@ foreach ($name in $copyNames) {
 
     Copy-Item -LiteralPath $src -Destination $dst -Recurse -Force
     Write-Host "Kopiert: $name"
+}
+
+if ($Apply) {
+    $oldBackups = Get-ChildItem -LiteralPath $target -Directory -Filter "cef-backup-*" |
+        Sort-Object Name -Descending |
+        Select-Object -Skip $KeepBackups
+
+    foreach ($old in $oldBackups) {
+        Remove-Item -LiteralPath $old.FullName -Recurse -Force
+        Write-Host "Altes Backup entfernt: $($old.Name)"
+    }
 }
 
 Write-Host ""

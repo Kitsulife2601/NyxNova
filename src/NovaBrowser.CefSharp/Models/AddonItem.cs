@@ -22,6 +22,9 @@ public sealed class AddonItem
     public string OptionsHtml { get; set; } = "";
     public List<string> Screenshots { get; set; } = new();
     public string Changelog { get; set; } = "";
+    public string Source { get; set; } = "NovaStore";
+    public string LocalPath { get; set; } = "";
+    public bool CanModifyBrowser { get; set; }
 
     [JsonIgnore]
     public string PermissionSummary => HostPermissions.Count == 0

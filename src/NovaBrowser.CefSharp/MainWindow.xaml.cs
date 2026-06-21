@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using CefSharp;
+using Microsoft.Win32;
 using Velopack;
 using Velopack.Sources;
 using NovaBrowser.App.Browser;
@@ -26,7 +27,6 @@ namespace NovaBrowser.App;
 
 public partial class MainWindow : Window, INotifyPropertyChanged
 {
-    private static readonly string AddonStartPageFile = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "WebseiteAddon", "popup.html");
     private const string DarkBlankPage = "data:text/html;charset=utf-8,%3C!doctype%20html%3E%3Chtml%20style%3D%22background%3A%230b0911%22%3E%3Cbody%20style%3D%22margin%3A0%3Bbackground%3A%230b0911%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E";
 
     private static readonly string[] CommonTrackerHosts =
@@ -77,11 +77,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private UpdateInfo? _availableUpdate;
     private VelopackAsset? _readyUpdate;
     private bool _suppressOmniboxSuggestions;
+    private bool _isApplyingOmniboxAutocomplete;
     private BrowserTab? _tabDragCandidate;
     private Point _tabDragStartPoint;
     private bool _googleAuthCheckRunning;
     private bool? _lastGoogleSignedIn;
     private string? _lastGoogleAuthProbeUrl;
+    private bool _windowStateTransitioning;
 
     public MainWindow() : this(false)
     {
@@ -433,7 +435,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
-            tab.Url = IsAddonStartPageAddress(address) ? AddressParser.HomeUrl : address;
+            tab.Url = address;
             if (ReferenceEquals(tab, _activeTab))
             {
                 AddressBox.Text = tab.Url;
@@ -1590,16 +1592,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (IsStartTab(tab.Url))
         {
-            InternalHost.Visibility = Visibility.Collapsed;
-            BrowserHost.Content = EnsureBrowser(tab);
+            BrowserHost.Content = null;
             _suppressOmniboxSuggestions = true;
             AddressBox.Text = AddressParser.HomeUrl;
             _suppressOmniboxSuggestions = false;
-            var startPage = GetAddonStartPageUri();
-            if (tab.Browser?.Address != startPage)
-            {
-                tab.Browser?.Load(startPage);
-            }
+            ShowInternalPage(AddressParser.HomeUrl);
         }
         else if (AddressParser.IsInternalUrl(tab.Url))
         {
@@ -1668,6 +1665,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         AddressBox.Text = url;
         _suppressOmniboxSuggestions = false;
         browser.Load(url);
+    }
+
+    public void ActivateFromSecondInstance(string? url)
+    {
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            OpenInNewTab(url);
+        }
+
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        Show();
+        Activate();
+        Topmost = true;
+        Topmost = false;
+        Focus();
     }
 
     private void OpenInNewTab(string url)
@@ -1772,12 +1788,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ShowInternalPage(string url)
     {
-        if (IsStartTab(url))
-        {
-            SelectTab(_activeTab!);
-            return;
-        }
-
         InternalHost.Visibility = Visibility.Visible;
         StartPage.Visibility = Visibility.Collapsed;
         HistoryPage.Visibility = Visibility.Collapsed;
@@ -1796,6 +1806,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var route = StripInternalUrlSuffix(url).ToLowerInvariant();
         switch (route)
         {
+            case "nova://start":
+                StartPage.Visibility = Visibility.Visible;
+                break;
             case "nova://history":
                 HistoryPage.Visibility = Visibility.Visible;
                 break;
@@ -1854,58 +1867,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private static bool IsStartTab(string? url)
     {
-        return string.Equals(url, AddressParser.HomeUrl, StringComparison.OrdinalIgnoreCase) ||
-               IsAddonStartPageAddress(url);
-    }
-
-    private static string GetAddonStartPageUri()
-    {
-        var addonFile = ResolveAddonStartPageFile();
-        return addonFile is not null
-            ? new Uri(addonFile).AbsoluteUri
-            : AddressParser.HomeUrl;
-    }
-
-    private static bool IsAddonStartPageAddress(string? address)
-    {
-        if (string.IsNullOrWhiteSpace(address) || !Uri.TryCreate(address, UriKind.Absolute, out var uri))
-        {
-            return false;
-        }
-
-        var addonFile = ResolveAddonStartPageFile();
-        return uri.IsFile &&
-               addonFile is not null &&
-               string.Equals(System.IO.Path.GetFullPath(uri.LocalPath), addonFile, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string? ResolveAddonStartPageFile()
-    {
-        var candidates = new[]
-        {
-            AddonStartPageFile,
-            System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "WebseiteAddon", "popup.html"),
-            System.IO.Path.Combine(Environment.CurrentDirectory, "Assets", "WebseiteAddon", "popup.html"),
-            System.IO.Path.Combine(Environment.CurrentDirectory, "NovaBrowser.CefSharp", "src", "NovaBrowser.CefSharp", "Assets", "WebseiteAddon", "popup.html")
-        };
-
-        foreach (var candidate in candidates)
-        {
-            try
-            {
-                var fullPath = System.IO.Path.GetFullPath(candidate);
-                if (System.IO.File.Exists(fullPath))
-                {
-                    return fullPath;
-                }
-            }
-            catch
-            {
-                // Ignore invalid candidate paths and keep searching.
-            }
-        }
-
-        return null;
+        return string.Equals(url, AddressParser.HomeUrl, StringComparison.OrdinalIgnoreCase);
     }
 
     private void SaveSession()
@@ -2372,6 +2334,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void AddressBox_KeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Tab || e.Key == Key.Right)
+        {
+            if (TryAcceptOmniboxAutocomplete())
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
         if (OmniboxPopup.Visibility == Visibility.Visible)
         {
             if (e.Key == Key.Down)
@@ -2422,18 +2393,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void AddressBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        if (_suppressOmniboxSuggestions || !AddressBox.IsKeyboardFocusWithin)
+        if (_suppressOmniboxSuggestions || _isApplyingOmniboxAutocomplete || !AddressBox.IsKeyboardFocusWithin)
         {
             return;
         }
 
-        RefreshOmniboxSuggestions(AddressBox.Text);
+        var isDeletion = e.Changes.Count > 0 && e.Changes.All(change => change.RemovedLength > 0 && change.AddedLength == 0);
+        RefreshOmniboxSuggestions(AddressBox.Text, applyAutocomplete: !isDeletion);
     }
 
     private void AddressBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         AddressBox.SelectAll();
-        RefreshOmniboxSuggestions(AddressBox.Text);
+        RefreshOmniboxSuggestions(AddressBox.Text, applyAutocomplete: false);
     }
 
     private void OmniboxSuggestionsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -2457,7 +2429,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
     }
 
-    private void RefreshOmniboxSuggestions(string input)
+    private void RefreshOmniboxSuggestions(string input, bool applyAutocomplete = false)
     {
         var query = (input ?? "").Trim();
         OmniboxSuggestions.Clear();
@@ -2477,10 +2449,28 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 OmniboxSuggestions.Add(new OmniboxSuggestion("\uE774", query, normalized, normalized, "Oeffnen"));
             }
 
+            foreach (var tab in Tabs
+                         .Where(tab => MatchesOmniboxQuery(tab.Title, tab.Url, query))
+                         .OrderByDescending(tab => ReferenceEquals(tab, _activeTab))
+                         .Take(3))
+            {
+                OmniboxSuggestions.Add(OmniboxSuggestion.FromTab(tab));
+            }
+
+            foreach (var bookmark in Bookmarks
+                         .Where(item => MatchesOmniboxQuery(item.Title, item.Url, query))
+                         .OrderByDescending(item => StartsWithOmniboxQuery(item.Title, item.Url, query))
+                         .ThenByDescending(item => item.CreatedAt)
+                         .Take(5))
+            {
+                OmniboxSuggestions.Add(OmniboxSuggestion.FromBookmark(bookmark));
+            }
+
             foreach (var item in History
-                         .Where(item => item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                                        item.Url.Contains(query, StringComparison.OrdinalIgnoreCase))
-                         .Take(6))
+                         .Where(item => MatchesOmniboxQuery(item.Title, item.Url, query))
+                         .OrderByDescending(item => StartsWithOmniboxQuery(item.Title, item.Url, query))
+                         .ThenByDescending(item => item.VisitedAt)
+                         .Take(8))
             {
                 OmniboxSuggestions.Add(OmniboxSuggestion.FromHistory(item));
             }
@@ -2509,6 +2499,81 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var hasSuggestions = OmniboxSuggestions.Count > 0;
         OmniboxPopup.Visibility = hasSuggestions ? Visibility.Visible : Visibility.Collapsed;
         OmniboxPopupHost.IsOpen = hasSuggestions;
+
+        if (applyAutocomplete)
+        {
+            ApplyOmniboxAutocomplete(query, unique);
+        }
+    }
+
+    private void ApplyOmniboxAutocomplete(string query, IReadOnlyList<OmniboxSuggestion> suggestions)
+    {
+        if (string.IsNullOrWhiteSpace(query) ||
+            AddressBox.SelectionLength > 0 ||
+            AddressBox.CaretIndex != AddressBox.Text.Length ||
+            query.Contains(' '))
+        {
+            return;
+        }
+
+        var completion = suggestions
+            .SelectMany(item => new[] { item.DisplayCompletion, item.Target })
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(value => value.StartsWith(query, StringComparison.OrdinalIgnoreCase) &&
+                                     value.Length > query.Length &&
+                                     !value.StartsWith("https://www.google.com/search", StringComparison.OrdinalIgnoreCase) &&
+                                     !value.StartsWith("https://duckduckgo.com/", StringComparison.OrdinalIgnoreCase) &&
+                                     !value.StartsWith("https://www.bing.com/search", StringComparison.OrdinalIgnoreCase));
+
+        if (string.IsNullOrWhiteSpace(completion))
+        {
+            return;
+        }
+
+        _isApplyingOmniboxAutocomplete = true;
+        AddressBox.Text = completion;
+        AddressBox.SelectionStart = query.Length;
+        AddressBox.SelectionLength = completion.Length - query.Length;
+        _isApplyingOmniboxAutocomplete = false;
+    }
+
+    private bool TryAcceptOmniboxAutocomplete()
+    {
+        if (!AddressBox.IsKeyboardFocusWithin || AddressBox.SelectionLength <= 0)
+        {
+            return false;
+        }
+
+        AddressBox.CaretIndex = AddressBox.Text.Length;
+        AddressBox.SelectionLength = 0;
+        RefreshOmniboxSuggestions(AddressBox.Text, applyAutocomplete: false);
+        return true;
+    }
+
+    private static bool MatchesOmniboxQuery(string title, string url, string query)
+    {
+        return title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+               url.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+               SimplifyUrlForCompletion(url).Contains(query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool StartsWithOmniboxQuery(string title, string url, string query)
+    {
+        return title.StartsWith(query, StringComparison.OrdinalIgnoreCase) ||
+               url.StartsWith(query, StringComparison.OrdinalIgnoreCase) ||
+               SimplifyUrlForCompletion(url).StartsWith(query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string SimplifyUrlForCompletion(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return url;
+        }
+
+        var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? uri.Host[4..] : uri.Host;
+        return host + uri.PathAndQuery.TrimEnd('/');
     }
 
     private static IEnumerable<string> BuildSearchCompletions(string query)
@@ -3092,12 +3157,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (sender is FrameworkElement { Tag: AddonItem item })
         {
-            if (item.Id.Equals("webseite-new-tab", StringComparison.OrdinalIgnoreCase))
-            {
-                OpenInNewTab(AddressParser.HomeUrl);
-                return;
-            }
-
             ShowAddonActionPopup(item);
         }
     }
@@ -3550,6 +3609,46 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void InstallZipAddon_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Nova Addon ZIP auswaehlen",
+            Filter = "Nova Addon ZIP (*.zip)|*.zip",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var preview = _addonService.ReadZipManifest(dialog.FileName);
+            var permissionDialog = new AddonPermissionDialog(preview) { Owner = this };
+            if (permissionDialog.ShowDialog() != true)
+            {
+                StatusText.Text = "ZIP-Addon Installation abgebrochen.";
+                return;
+            }
+
+            var installed = _addonService.InstallFromZip(dialog.FileName, preview);
+            NotifyCollectionViews();
+            RefreshExtensionsPopup();
+            RefreshStoreList();
+            RefreshInstalledAddonList();
+            StatusText.Text = $"{installed.Name} aus ZIP installiert und aktiviert.";
+        }
+        catch (Exception ex)
+        {
+            App.LogException("install-zip-addon", ex);
+            MessageBox.Show(this, ex.Message, "Nova Addon konnte nicht installiert werden", MessageBoxButton.OK, MessageBoxImage.Warning);
+            StatusText.Text = "ZIP-Addon wurde abgelehnt.";
+        }
+    }
+
     private void InstallAddon(AddonItem addon)
     {
         if (addon.Installed)
@@ -3954,14 +4053,32 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void MinimizeWindow_Click(object sender, RoutedEventArgs e)
+    private async void MinimizeWindow_Click(object sender, RoutedEventArgs e)
     {
+        if (_windowStateTransitioning)
+        {
+            return;
+        }
+
+        _windowStateTransitioning = true;
+        AnimateWindowChromeTransition(minimize: true);
+        await Task.Delay(95);
         WindowState = WindowState.Minimized;
+        _windowStateTransitioning = false;
     }
 
-    private void MaximizeWindow_Click(object sender, RoutedEventArgs e)
+    private async void MaximizeWindow_Click(object sender, RoutedEventArgs e)
     {
+        if (_windowStateTransitioning)
+        {
+            return;
+        }
+
+        _windowStateTransitioning = true;
+        AnimateWindowChromeTransition(minimize: false);
+        await Task.Delay(70);
         ToggleMaximized();
+        _windowStateTransitioning = false;
     }
 
     private void CloseWindow_Click(object sender, RoutedEventArgs e)
@@ -3971,6 +4088,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Window_StateChanged(object sender, EventArgs e)
     {
+        if (WindowState != WindowState.Minimized)
+        {
+            BeginAnimation(OpacityProperty, null);
+            Opacity = 1;
+        }
+
         UpdateWindowChromeState();
     }
 
@@ -3978,6 +4101,62 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         UpdateWindowChromeState();
+    }
+
+    private void AnimateWindowChromeTransition(bool minimize)
+    {
+        try
+        {
+            var duration = TimeSpan.FromMilliseconds(minimize ? 90 : 120);
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            if (WindowFrame.RenderTransform is not ScaleTransform scale)
+            {
+                scale = new ScaleTransform(1, 1);
+                WindowFrame.RenderTransform = scale;
+            }
+
+            var scaleTo = minimize ? 0.985 : 0.994;
+            var scaleAnimation = new DoubleAnimation
+            {
+                To = scaleTo,
+                Duration = duration,
+                AutoReverse = !minimize,
+                EasingFunction = ease,
+                FillBehavior = minimize ? FillBehavior.HoldEnd : FillBehavior.Stop
+            };
+
+            var opacityAnimation = new DoubleAnimation
+            {
+                To = minimize ? 0.72 : 0.94,
+                Duration = duration,
+                AutoReverse = !minimize,
+                EasingFunction = ease,
+                FillBehavior = minimize ? FillBehavior.HoldEnd : FillBehavior.Stop
+            };
+
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimation);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimation);
+            BeginAnimation(OpacityProperty, opacityAnimation);
+
+            if (!minimize)
+            {
+                Dispatcher.BeginInvoke(async () =>
+                {
+                    await Task.Delay(150);
+                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                    BeginAnimation(OpacityProperty, null);
+                    scale.ScaleX = 1;
+                    scale.ScaleY = 1;
+                    Opacity = 1;
+                }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+        }
+        catch (Exception ex)
+        {
+            App.LogException("window-transition-animation", ex);
+        }
     }
 
     private void ToggleFullscreen()
@@ -4735,6 +4914,7 @@ public sealed class OmniboxSuggestion
     public string Subtitle { get; }
     public string Target { get; }
     public string Badge { get; }
+    public string DisplayCompletion { get; init; } = "";
 
     public static OmniboxSuggestion FromHistory(HistoryItem item)
     {
@@ -4742,6 +4922,43 @@ public sealed class OmniboxSuggestion
         var icon = item.Url.Contains("youtube", StringComparison.OrdinalIgnoreCase)
             ? "\uE714"
             : "\uE81C";
-        return new OmniboxSuggestion(icon, title, item.Url, item.Url, "Verlauf");
+        return new OmniboxSuggestion(icon, title, item.Url, item.Url, "Verlauf")
+        {
+            DisplayCompletion = SimplifyTarget(item.Url)
+        };
+    }
+
+    public static OmniboxSuggestion FromBookmark(Bookmark item)
+    {
+        var title = string.IsNullOrWhiteSpace(item.Title) ? item.Url : item.Title;
+        return new OmniboxSuggestion("\uE734", title, item.Url, item.Url, "Lesezeichen")
+        {
+            DisplayCompletion = SimplifyTarget(item.Url)
+        };
+    }
+
+    public static OmniboxSuggestion FromTab(BrowserTab item)
+    {
+        var title = string.IsNullOrWhiteSpace(item.Title) ? item.Url : item.Title;
+        return new OmniboxSuggestion("\uE8A7", title, item.Url, item.Url, "Tab")
+        {
+            DisplayCompletion = SimplifyTarget(item.Url)
+        };
+    }
+
+    private static string SimplifyTarget(string target)
+    {
+        if (!Uri.TryCreate(target, UriKind.Absolute, out var uri))
+        {
+            return target;
+        }
+
+        if (uri.Scheme == "nova")
+        {
+            return target;
+        }
+
+        var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? uri.Host[4..] : uri.Host;
+        return host + uri.PathAndQuery.TrimEnd('/');
     }
 }

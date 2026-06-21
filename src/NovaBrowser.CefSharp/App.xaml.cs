@@ -1,10 +1,14 @@
 using System.Globalization;
 using System.IO;
+using System.IO.Pipes;
+using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using CefSharp;
 using CefSharp.Wpf;
+using Microsoft.Win32;
 
 namespace NovaBrowser.App;
 
@@ -25,11 +29,13 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         InstallCrashGuards();
+        EnsureWindowsUninstallEntry();
         var args = _startupArgs.Length > 0 ? _startupArgs : e.Args;
         StartupUrl = args.FirstOrDefault(arg => Uri.TryCreate(arg, UriKind.Absolute, out var uri) &&
                                                   (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == "nova" || uri.Scheme == "novabrowser"));
         ConfigureCulture();
         ConfigureCef();
+        StartSingleInstanceListener();
         base.OnStartup(e);
     }
 
@@ -121,6 +127,134 @@ public partial class App : Application
         settings.CefCommandLineArgs["enable-smooth-scrolling"] = "1";
 
         Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
+    }
+
+    private static void EnsureWindowsUninstallEntry()
+    {
+        try
+        {
+            var exePath = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(exePath))
+            {
+                return;
+            }
+
+            var appRoot = Directory.GetParent(exePath)?.FullName;
+            if (string.IsNullOrWhiteSpace(appRoot))
+            {
+                return;
+            }
+
+            var updateExe = Path.Combine(appRoot, "Update.exe");
+            if (!File.Exists(updateExe))
+            {
+                return;
+            }
+
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
+            var uninstallCommand = $"\"{updateExe}\" uninstall";
+            var quietUninstallCommand = $"\"{updateExe}\" uninstall --silent";
+            var estimatedSizeKb = EstimateDirectorySizeKb(appRoot);
+
+            using var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\NyxNova");
+            if (key is null)
+            {
+                return;
+            }
+
+            key.SetValue("DisplayName", "NyxNova Browser", RegistryValueKind.String);
+            key.SetValue("DisplayVersion", version, RegistryValueKind.String);
+            key.SetValue("Publisher", "Kitsulife2601", RegistryValueKind.String);
+            key.SetValue("InstallLocation", appRoot, RegistryValueKind.String);
+            key.SetValue("DisplayIcon", exePath, RegistryValueKind.String);
+            key.SetValue("UninstallString", uninstallCommand, RegistryValueKind.String);
+            key.SetValue("QuietUninstallString", quietUninstallCommand, RegistryValueKind.String);
+            key.SetValue("URLInfoAbout", "https://github.com/Kitsulife2601/NyxNova", RegistryValueKind.String);
+            key.SetValue("NoModify", 1, RegistryValueKind.DWord);
+            key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+            if (estimatedSizeKb > 0)
+            {
+                key.SetValue("EstimatedSize", estimatedSizeKb, RegistryValueKind.DWord);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogException("uninstall-registry", ex);
+        }
+    }
+
+    private static int EstimateDirectorySizeKb(string path)
+    {
+        try
+        {
+            var bytes = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
+                .Sum(file =>
+                {
+                    try
+                    {
+                        return new FileInfo(file).Length;
+                    }
+                    catch
+                    {
+                        return 0L;
+                    }
+                });
+
+            return (int)Math.Min(int.MaxValue, Math.Max(1, bytes / 1024));
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private static void StartSingleInstanceListener()
+    {
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                try
+                {
+                    using var server = new NamedPipeServerStream(
+                        Program.SingleInstancePipeName,
+                        PipeDirection.In,
+                        1,
+                        PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous);
+                    await server.WaitForConnectionAsync();
+
+                    using var reader = new StreamReader(server, Encoding.UTF8);
+                    var forwardedArgs = new List<string>();
+                    string? line;
+                    while ((line = await reader.ReadLineAsync()) is not null)
+                    {
+                        forwardedArgs.Add(line);
+                    }
+
+                    var args = forwardedArgs.ToArray();
+                    Current?.Dispatcher.BeginInvoke(() => HandleSecondInstanceArgs(args));
+                }
+                catch (Exception ex)
+                {
+                    LogException("single-instance-pipe", ex);
+                    await Task.Delay(500);
+                }
+            }
+        });
+    }
+
+    private static void HandleSecondInstanceArgs(string[] args)
+    {
+        if (Current?.MainWindow is not MainWindow window)
+        {
+            return;
+        }
+
+        var url = args.FirstOrDefault(arg => Uri.TryCreate(arg, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == "nova" || uri.Scheme == "novabrowser"));
+
+        window.ActivateFromSecondInstance(url);
     }
 
     private static void WriteCrashLine(string line)

@@ -384,23 +384,114 @@
             <Setter Property="Margin" Value="2,0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="#d9b7ff" />
             <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                CornerRadius="13"
+                                Background="#00130d1c"
+                                BorderBrush="#00281740"
+                                BorderThickness="1"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
+                            <ContentPresenter x:Name="IconPresenter"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#241635" Duration="0:0:0.14" />
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#724da6" Duration="0:0:0.14" />
+                                            <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#00130d1c" Duration="0:0:0.18" />
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#00281740" Duration="0:0:0.18" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                                <Setter Property="Foreground" Value="#ffffff" />
+                                <Setter TargetName="IconPresenter" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="0" Color="#b967ff" Opacity="0.42" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Foreground" Value="#ffffff" />
+                                <Setter TargetName="Root" Property="Background" Value="#32204a" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#b967ff" />
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="CloseCaptionButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
             <Setter Property="Foreground" Value="#ead8ff" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Root" CornerRadius="17" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
+                        <Border x:Name="Root"
+                                CornerRadius="13"
+                                Background="#00130d1c"
+                                BorderBrush="#00281740"
+                                BorderThickness="1"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#4a2875" />
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#c08cff" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#5c1226" Duration="0:0:0.12" />
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#ff4f7b" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#00130d1c" Duration="0:0:0.18" />
+                                            <ColorAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#00281740" Duration="0:0:0.18" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                                <Setter Property="Foreground" Value="#ffffff" />
+                                <Setter TargetName="Root" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#ff2e67" Opacity="0.42" />
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#321f52" />
+                                <Setter TargetName="Root" Property="Background" Value="#7b1733" />
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -414,7 +505,11 @@
             BorderBrush="#8f42ff"
             BorderThickness="1"
             CornerRadius="2"
+            RenderTransformOrigin="0.5,0.5"
             PreviewMouseDown="RootGrid_PreviewMouseDown">
+    <Border.RenderTransform>
+        <ScaleTransform ScaleX="1" ScaleY="1" />
+    </Border.RenderTransform>
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition x:Name="TitleBarRow" Height="40" />
@@ -1569,6 +1664,7 @@
                                     <ComboBoxItem Content="Angeheftet" />
                                 </ComboBox>
                                 <Button Content="NovaStore oeffnen" Style="{StaticResource NovaChipButton}" Margin="12,0,0,0" Click="OpenStore_Click" />
+                                <Button Content="ZIP Addon installieren" Style="{StaticResource NovaChipButton}" Margin="12,0,0,0" Click="InstallZipAddon_Click" />
                             </StackPanel>
                         </StackPanel>
                         <ItemsControl x:Name="InstalledAddonsList" ItemsSource="{Binding InstalledAddons}">

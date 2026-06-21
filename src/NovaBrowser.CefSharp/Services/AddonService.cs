@@ -1,4 +1,8 @@
 using System.Collections.ObjectModel;
+using System.IO;
+using System.IO.Compression;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using NovaBrowser.App.Models;
 
 namespace NovaBrowser.App.Services;
@@ -9,9 +13,26 @@ public sealed class AddonService
     {
         "nova-new-tab",
         "new-tab",
+        "webseite-new-tab",
         "quick-notes",
         "privacy-guard",
         "discord-quick"
+    };
+
+    private static readonly Regex SafeAddonIdPattern = new("^[a-zA-Z0-9._-]{3,64}$", RegexOptions.Compiled);
+    private static readonly HashSet<string> AllowedPermissions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "storage",
+        "tabs",
+        "activeTab",
+        "downloads",
+        "notifications",
+        "theme",
+        "startPage",
+        "browserUi",
+        "localServer",
+        "navigation",
+        "translation"
     };
 
     private static readonly HashSet<string> HiddenToolbarAddonIds = new(StringComparer.OrdinalIgnoreCase)
@@ -61,26 +82,11 @@ public sealed class AddonService
             }
         }
 
-        var validIds = defaults.Select(addon => addon.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var validIds = catalog.Select(addon => addon.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var installedIds = _installedStore.Load()
             .Where(id => validIds.Contains(id) && !RemovedSampleAddonIds.Contains(id))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-
-        if (installedIds.Count == 0)
-        {
-            installedIds = defaults.Where(addon => addon.Installed).Select(addon => addon.Id).ToList();
-        }
-        else
-        {
-            foreach (var defaultInstalled in defaults.Where(addon => addon.Installed))
-            {
-                if (!installedIds.Contains(defaultInstalled.Id, StringComparer.OrdinalIgnoreCase))
-                {
-                    installedIds.Add(defaultInstalled.Id);
-                }
-            }
-        }
 
         Settings = _settingsStore.Load();
 
@@ -116,6 +122,109 @@ public sealed class AddonService
         Installed.Add(addon);
         Save();
         return true;
+    }
+
+    public AddonItem ReadZipManifest(string zipPath)
+    {
+        if (!File.Exists(zipPath))
+        {
+            throw new InvalidOperationException("Die ZIP-Datei wurde nicht gefunden.");
+        }
+
+        var fileInfo = new FileInfo(zipPath);
+        if (fileInfo.Length > 50L * 1024L * 1024L)
+        {
+            throw new InvalidOperationException("Das Addon-ZIP ist zu gross. Maximal erlaubt sind 50 MB.");
+        }
+
+        using var archive = ZipFile.OpenRead(zipPath);
+        var manifestEntry = archive.GetEntry("nova-addon.json") ?? archive.GetEntry("manifest.json");
+        if (manifestEntry is null)
+        {
+            throw new InvalidOperationException("Manifest fehlt. Erwartet wird nova-addon.json oder manifest.json.");
+        }
+
+        using var manifestStream = manifestEntry.Open();
+        var manifest = JsonSerializer.Deserialize<AddonManifest>(manifestStream, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        }) ?? throw new InvalidOperationException("Manifest konnte nicht gelesen werden.");
+
+        ValidateManifest(manifest, archive);
+
+        return new AddonItem
+        {
+            Id = manifest.Id.Trim(),
+            Name = manifest.Name.Trim(),
+            Version = string.IsNullOrWhiteSpace(manifest.Version) ? "1.0.0" : manifest.Version.Trim(),
+            Author = string.IsNullOrWhiteSpace(manifest.Author) ? "Unbekannt" : manifest.Author.Trim(),
+            Description = manifest.Description?.Trim() ?? "",
+            Category = string.IsNullOrWhiteSpace(manifest.Category) ? "ZIP Addon" : manifest.Category.Trim(),
+            Enabled = true,
+            Installed = false,
+            Pinned = false,
+            Icon = string.IsNullOrWhiteSpace(manifest.Icon) ? "\uECAA" : manifest.Icon.Trim(),
+            HomepageUrl = manifest.HomepageUrl?.Trim() ?? "",
+            Permissions = (manifest.Permissions ?? new List<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            HostPermissions = (manifest.HostPermissions ?? new List<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            PopupHtml = manifest.PopupHtml?.Trim() ?? "",
+            OptionsHtml = manifest.OptionsHtml?.Trim() ?? "",
+            Screenshots = manifest.Screenshots.Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            Changelog = manifest.Changelog?.Trim() ?? "Importiert aus ZIP.",
+            Source = "ZIP",
+            CanModifyBrowser = (manifest.Permissions ?? new List<string>()).Any(permission =>
+                permission.Equals("startPage", StringComparison.OrdinalIgnoreCase) ||
+                permission.Equals("browserUi", StringComparison.OrdinalIgnoreCase) ||
+                permission.Equals("theme", StringComparison.OrdinalIgnoreCase))
+        };
+    }
+
+    public AddonItem InstallFromZip(string zipPath, AddonItem preview)
+    {
+        using var archive = ZipFile.OpenRead(zipPath);
+        var addonRoot = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "NovaBrowser.CefSharp",
+            "Addons",
+            preview.Id);
+
+        if (Directory.Exists(addonRoot))
+        {
+            Directory.Delete(addonRoot, recursive: true);
+        }
+
+        Directory.CreateDirectory(addonRoot);
+        foreach (var entry in archive.Entries)
+        {
+            if (string.IsNullOrEmpty(entry.Name))
+            {
+                continue;
+            }
+
+            var destination = Path.GetFullPath(Path.Combine(addonRoot, entry.FullName));
+            if (!destination.StartsWith(Path.GetFullPath(addonRoot), StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("ZIP enthaelt ungueltige Pfade.");
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            entry.ExtractToFile(destination, overwrite: true);
+        }
+
+        var existing = Catalog.FirstOrDefault(addon => addon.Id.Equals(preview.Id, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            Catalog.Remove(existing);
+            Installed.Remove(existing);
+        }
+
+        preview.Installed = true;
+        preview.Enabled = true;
+        preview.LocalPath = addonRoot;
+        Catalog.Add(preview);
+        Installed.Add(preview);
+        Save();
+        return preview;
     }
 
     public void Remove(AddonItem addon)
@@ -159,7 +268,6 @@ public sealed class AddonService
     {
         return new List<AddonItem>
         {
-            Addon("webseite-new-tab", "Neuer Tab", "Dennis", "Moderne Nova-Startseite aus webseite-adon.zip mit Uhr, Suchfeld, Quick Links, Hintergrundwechsel, Uebersetzung und Heart-Server.", "Nova Tools", true, false, "\uE80F", 4.9, new[] { "Speicher verwenden", "Navigation fuer optionale Uebersetzung erkennen", "Zugriff auf lokalen Heart-Server 127.0.0.1:8787" }, new[] { "http://127.0.0.1:8787/*" }),
             Addon("nova-translate", "Nova Uebersetzer", "Nova Labs", "Uebersetzt markierte Texte und Webseiten.", "Produktivitaet", false, false, "\uE774", 4.6, new[] { "Aktuelle Seite lesen", "Speicher verwenden" }, new[] { "https://*/*" }),
             Addon("youtube-tools", "YouTube Tools", "Nova Media", "Schnelle Werkzeuge fuer YouTube.", "Musik", false, false, "\uE768", 4.4, new[] { "Aktuelle Seite lesen", "Speicher verwenden" }, new[] { "https://youtube.com/*", "https://www.youtube.com/*" }),
             Addon("vrchat-tools", "VRChat Schnellbereich", "Nova Social", "VRChat-Links, Wiki und Community-Zugriff als eigene Nova-Karte.", "Social", false, false, "\uE716", 4.7, new[] { "Tabs lesen", "Speicher verwenden" }, new[] { "https://vrchat.com/*", "https://wiki.vrchat.com/*" }),
@@ -173,6 +281,70 @@ public sealed class AddonService
         return HiddenToolbarAddonIds.Contains(addon.Id) ||
                addon.Icon == "\uE80F" ||
                addon.Name.Contains("Neuer Tab", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ValidateManifest(AddonManifest manifest, ZipArchive archive)
+    {
+        if (string.IsNullOrWhiteSpace(manifest.Id) || !SafeAddonIdPattern.IsMatch(manifest.Id))
+        {
+            throw new InvalidOperationException("Addon-ID fehlt oder ist ungueltig. Erlaubt sind 3-64 Zeichen: Buchstaben, Zahlen, Punkt, Unterstrich, Minus.");
+        }
+
+        if (RemovedSampleAddonIds.Contains(manifest.Id))
+        {
+            throw new InvalidOperationException("Diese Addon-ID ist gesperrt, weil sie zu alten Beispiel-Addons gehoert.");
+        }
+
+        if (string.IsNullOrWhiteSpace(manifest.Name))
+        {
+            throw new InvalidOperationException("Addon-Name fehlt.");
+        }
+
+        manifest.Permissions ??= new List<string>();
+        manifest.HostPermissions ??= new List<string>();
+
+        var unknownPermissions = manifest.Permissions
+            .Where(permission => !AllowedPermissions.Contains(permission))
+            .ToList();
+        if (unknownPermissions.Count > 0)
+        {
+            throw new InvalidOperationException($"Unbekannte Berechtigung: {string.Join(", ", unknownPermissions)}");
+        }
+
+        foreach (var host in manifest.HostPermissions)
+        {
+            if (!IsAllowedHostPermission(host))
+            {
+                throw new InvalidOperationException($"Ungueltiger Host-Zugriff: {host}");
+            }
+        }
+
+        foreach (var entry in archive.Entries)
+        {
+            if (entry.FullName.Contains("..", StringComparison.Ordinal) ||
+                Path.IsPathRooted(entry.FullName) ||
+                entry.FullName.Contains('\\'))
+            {
+                throw new InvalidOperationException("ZIP enthaelt ungueltige oder unsichere Dateipfade.");
+            }
+        }
+    }
+
+    private static bool IsAllowedHostPermission(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return false;
+        }
+
+        if (host.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            host.StartsWith("http://127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+            host.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static void ApplyDefaultMetadata(AddonItem target, AddonItem source)
@@ -216,5 +388,23 @@ public sealed class AddonService
             Screenshots = new List<string> { "Screenshot Platzhalter 1", "Screenshot Platzhalter 2" },
             Changelog = "1.0.0 - Erste NovaStore-Version."
         };
+    }
+
+    private sealed class AddonManifest
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Version { get; set; } = "";
+        public string Author { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Category { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string HomepageUrl { get; set; } = "";
+        public List<string> Permissions { get; set; } = new();
+        public List<string> HostPermissions { get; set; } = new();
+        public string PopupHtml { get; set; } = "";
+        public string OptionsHtml { get; set; } = "";
+        public List<string> Screenshots { get; set; } = new();
+        public string Changelog { get; set; } = "";
     }
 }
