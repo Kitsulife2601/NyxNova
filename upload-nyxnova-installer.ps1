@@ -231,7 +231,14 @@ function Send-FileWithProgress {
                 $percent = if ($total -gt 0) { ($uploaded / $total) * 100 } else { 100 }
                 $elapsed = [Math]::Max(0.1, ($now - $started).TotalSeconds)
                 $speed = ($uploaded / 1MB) / $elapsed
-                $line = "{0,6:N2}%  {1:N1}/{2:N1} MB  {3:N1} MB/s" -f $percent, ($uploaded / 1MB), ($total / 1MB), $speed
+                $remainingMb = [Math]::Max(0, ($total - $uploaded) / 1MB)
+                $etaText = if ($speed -gt 0.01) {
+                    $etaSeconds = [int]($remainingMb / $speed)
+                    $eta = [TimeSpan]::FromSeconds($etaSeconds)
+                    if ($eta.TotalHours -ge 1) { "{0:D2}:{1:mm}:{1:ss}" -f [int]$eta.TotalHours, $eta }
+                    else { "{0:mm}:{0:ss}" -f $eta }
+                } else { "--:--" }
+                $line = "{0,6:N2}%  {1:N1}/{2:N1} MB  {3:N1} MB/s  ETA {4}" -f $percent, ($uploaded / 1MB), ($total / 1MB), $speed, $etaText
                 Write-Host "`r$line" -NoNewline -ForegroundColor Cyan
                 $script:lastDraw = $now
             }
