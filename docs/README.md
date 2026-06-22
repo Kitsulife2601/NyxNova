@@ -18,18 +18,18 @@ http://127.0.0.1:8088
 ## Online stellen
 
 Den kompletten Inhalt dieses Ordners auf den Webspace hochladen.
-Wichtig: Der Installer muss im Webspace unter `downloads/NyxNova-beta-Setup.exe` liegen, damit der Download direkt von deiner Webseite startet.
+Der Installer liegt als GitHub-Release-Asset und wird von der Webseite direkt heruntergeladen.
 
-Hinweis: Der Installer ist groesser als 100 MB. Fuer GitHub Pages ist das als normale Repository-Datei zu gross. Fuer IONOS/Webspace ist der direkte Download geeignet.
+Hinweis: Der Installer ist groesser als 100 MB. Fuer GitHub Pages ist das als normale Repository-Datei zu gross. Als Release-Asset funktioniert der direkte Download.
 
 ## Download-Link
 
 Die Download-Buttons zeigen direkt auf:
 
 ```text
-downloads/NyxNova-beta-Setup.exe
+https://github.com/Kitsulife2601/NyxNova/releases/download/v1.0.11-beta/NyxNova-beta-Setup.exe
 ```
 
-Dadurch wird kein GitHub-Fenster mehr geoeffnet, sondern der Installer direkt heruntergeladen.
+Dadurch startet der Installer-Download direkt aus dem Release.
 
 
