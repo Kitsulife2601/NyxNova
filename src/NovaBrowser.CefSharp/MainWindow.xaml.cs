@@ -447,7 +447,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 HandleAuthCallback,
                 ShowCrashErrorPage),
             PermissionHandler = new NovaPermissionHandler(Dispatcher, RecordDiagnostic, ShowBrowserPermissionPrompt),
-            MenuHandler = new NovaContextMenuHandler(message => RunOnUi(() => StatusText.Text = message, "context-menu-status")),
+            MenuHandler = new NovaContextMenuHandler((link, image, page) => RunOnUi(() => ShowWebContextMenu(link, image, page), "web-context-menu")),
             JsDialogHandler = new NovaJsDialogHandler(message => RunOnUi(() => StatusText.Text = message, "js-dialog-status")),
             DisplayHandler = new NovaDisplayHandler(Dispatcher, SetFullscreenFromWebContent)
         };
@@ -767,6 +767,107 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             // Frame wurde beim Wegnavigieren/Tab-Wechsel verworfen, bevor die Skripte liefen. Harmlos.
         }
+    }
+
+    // Baut das Menue je nach Kontext auf: Link- und Bild-Bereich getrennt durch
+    // Trennlinien (wie in Chrome, wenn ein Bild in einem Link liegt). Ohne Treffer
+    // erscheint das Seiten-Menue. "Untersuchen" steht immer unten.
+    private void ShowWebContextMenu(string linkUrl, string imageUrl, string pageUrl)
+    {
+        WebContextMenuItems.Children.Clear();
+
+        var hasLink = !string.IsNullOrEmpty(linkUrl);
+        var hasImage = !string.IsNullOrEmpty(imageUrl);
+
+        if (hasLink)
+        {
+            AddWebContextItem("Link in neuem Tab öffnen", () => CreateTab(linkUrl, select: true));
+            AddWebContextItem("Link in neuem Fenster öffnen", () => CreateTab(linkUrl, select: true));
+            AddWebContextItem("Link in Inkognito-Fenster öffnen", () => CreateTab(linkUrl, select: true));
+            AddWebContextSeparator();
+            AddWebContextItem("Link speichern unter…", () => _activeTab?.Browser?.GetBrowserHost()?.StartDownload(linkUrl));
+            AddWebContextItem("Adresse des Links kopieren", () => CopyToClipboardSafe(linkUrl));
+        }
+
+        if (hasImage)
+        {
+            if (hasLink)
+            {
+                AddWebContextSeparator();
+            }
+
+            AddWebContextItem("Bild in neuem Tab öffnen", () => CreateTab(imageUrl, select: true));
+            AddWebContextItem("Bild speichern unter…", () => _activeTab?.Browser?.GetBrowserHost()?.StartDownload(imageUrl));
+            AddWebContextItem("Bildadresse kopieren", () => CopyToClipboardSafe(imageUrl));
+        }
+
+        if (!hasLink && !hasImage)
+        {
+            AddWebContextItem("Seite speichern unter…", () =>
+                _activeTab?.Browser?.GetBrowserHost()?.StartDownload(string.IsNullOrEmpty(pageUrl) ? (_activeTab?.Url ?? "") : pageUrl));
+            AddWebContextItem("Neu laden", () => _activeTab?.Browser?.Reload());
+            AddWebContextItem("Zu Favoriten hinzufügen", () => AddCurrentPageToBookmarks(pageUrl));
+            AddWebContextSeparator();
+            AddWebContextItem("Hintergrund anpassen", () => NavigateActive("nova://settings/design"));
+        }
+
+        AddWebContextSeparator();
+        AddWebContextItem("Untersuchen", () => _activeTab?.Browser?.GetBrowserHost()?.ShowDevTools());
+
+        WebContextMenu.IsOpen = false;
+        WebContextMenu.IsOpen = true;
+    }
+
+    private void AddWebContextItem(string label, Action action)
+    {
+        var btn = new Button
+        {
+            Content = label,
+            Style = (Style)FindResource("WebContextItem")
+        };
+        btn.Click += (_, _) =>
+        {
+            WebContextMenu.IsOpen = false;
+            try { action(); }
+            catch (Exception ex) { StatusText.Text = $"Aktion fehlgeschlagen: {ex.Message}"; }
+        };
+        WebContextMenuItems.Children.Add(btn);
+    }
+
+    private void AddWebContextSeparator()
+    {
+        WebContextMenuItems.Children.Add(new Border
+        {
+            Height = 1,
+            Margin = new Thickness(6, 5, 6, 5),
+            Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x31))
+        });
+    }
+
+    private void CopyToClipboardSafe(string text)
+    {
+        try
+        {
+            Clipboard.SetText(text);
+            StatusText.Text = "In Zwischenablage kopiert.";
+        }
+        catch
+        {
+            StatusText.Text = "Kopieren fehlgeschlagen.";
+        }
+    }
+
+    private void AddCurrentPageToBookmarks(string pageUrl)
+    {
+        var url = string.IsNullOrEmpty(pageUrl) ? (_activeTab?.Url ?? "") : pageUrl;
+        if (!AddressParser.IsWebUrl(url))
+        {
+            StatusText.Text = "Nur echte Webseiten koennen als Favorit gespeichert werden.";
+            return;
+        }
+
+        _bookmarkService.SaveOrUpdate(string.IsNullOrWhiteSpace(_activeTab?.Title) ? url : _activeTab!.Title, url, "");
+        StatusText.Text = "Zu Favoriten hinzugefuegt.";
     }
 
     private static bool IsFatalMediaConsoleMessage(string message)

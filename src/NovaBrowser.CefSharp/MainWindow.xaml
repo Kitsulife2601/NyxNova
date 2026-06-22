@@ -388,13 +388,75 @@
             <Setter Property="Height" Value="36" />
             <Setter Property="Margin" Value="0,0,8,8" />
         </Style>
-        <Style x:Key="QuickLinkButton" TargetType="Button" BasedOn="{StaticResource InternalButton}">
+        <Style x:Key="QuickLinkButton" TargetType="Button">
             <Setter Property="Height" Value="92" />
             <Setter Property="Margin" Value="6" />
-            <Setter Property="Background" Value="#1a1524" />
-            <Setter Property="BorderBrush" Value="#47305f" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#ECE2FF" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                CornerRadius="16"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="1.2"
+                                RenderTransformOrigin="0.5,0.5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#A855F7" />
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.03" ScaleY="1.03" />
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Root" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="22" ShadowDepth="0" Color="#A855F7" Opacity="0.6" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.98" ScaleY="0.98" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="WebContextItem" TargetType="Button">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="#A0A0A5" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" CornerRadius="6" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Left" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#33A855F7" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="PinnedAddonButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
@@ -1531,7 +1593,30 @@
                 </Grid>
 
                 <Grid x:Name="StartPage" Visibility="Collapsed" Margin="72,48">
-                    <StackPanel Width="980" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- Neon-Cyberpunk-Glow: zwei weiche Leuchtkreise fuer Tiefe (rein dekorativ). -->
+                    <Ellipse Width="560" Height="560" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-140,-120,0,0" Opacity="0.45" IsHitTestVisible="False" Panel.ZIndex="0">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush>
+                                <GradientStop Color="#A855F7" Offset="0" />
+                                <GradientStop Color="#00A855F7" Offset="1" />
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                        <Ellipse.Effect>
+                            <BlurEffect Radius="150" />
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <Ellipse Width="560" Height="560" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-150,-130" Opacity="0.32" IsHitTestVisible="False" Panel.ZIndex="0">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush>
+                                <GradientStop Color="#EC4899" Offset="0" />
+                                <GradientStop Color="#00EC4899" Offset="1" />
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                        <Ellipse.Effect>
+                            <BlurEffect Radius="150" />
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <StackPanel Width="980" HorizontalAlignment="Center" VerticalAlignment="Center" Panel.ZIndex="1">
                         <Border Width="96" Height="96" CornerRadius="30" HorizontalAlignment="Center" Background="{DynamicResource NovaButton}" BorderBrush="#d9b8ff" BorderThickness="1">
                             <TextBlock Text="N" Foreground="White" FontSize="54" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock.Effect>
@@ -1545,9 +1630,9 @@
                             </TextBlock.Effect>
                         </TextBlock>
                         <TextBlock Text="Schnell suchen, ruhig browsen, alles im Nova-Stil." Foreground="{StaticResource MutedText}" FontSize="16" HorizontalAlignment="Center" Margin="0,4,0,0" />
-                        <Border Width="840" Height="68" CornerRadius="34" HorizontalAlignment="Center" Background="#1b1724" BorderBrush="#9f72df" BorderThickness="1.4" Margin="0,26,0,32">
+                        <Border Width="840" Height="68" CornerRadius="34" HorizontalAlignment="Center" Background="#1b1724" BorderBrush="#A855F7" BorderThickness="1.6" Margin="0,26,0,32">
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="26" ShadowDepth="0" Color="#8f42ff" Opacity="0.3" />
+                                <DropShadowEffect BlurRadius="30" ShadowDepth="0" Color="#A855F7" Opacity="0.55" />
                             </Border.Effect>
                             <Grid Margin="24,0,10,0">
                                 <Grid.ColumnDefinitions>
@@ -1561,12 +1646,49 @@
 
                         <TextBlock Text="Quick Links" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" Margin="0,0,0,14" />
                         <UniformGrid Columns="6">
-                            <Button Content="Google" Tag="https://www.google.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click" />
-                            <Button Content="YouTube" Tag="https://www.youtube.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click" />
-                            <Button Content="GitHub" Tag="https://github.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click" />
-                            <Button Content="MDN" Tag="https://developer.mozilla.org" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click" />
-                            <Button Content="Reddit" Tag="https://www.reddit.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click" />
-                            <Button Content="Add Link" Style="{StaticResource QuickLinkButton}" Click="AddLink_Click" />
+                            <Button Tag="https://www.google.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click">
+                                <StackPanel>
+                                    <Image Width="40" Height="40" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"
+                                           Source="https://www.google.com/s2/favicons?sz=64&amp;domain=google.com" />
+                                    <TextBlock Text="Google" HorizontalAlignment="Center" FontSize="13" Margin="0,9,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button Tag="https://www.youtube.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click">
+                                <StackPanel>
+                                    <Image Width="40" Height="40" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"
+                                           Source="https://www.google.com/s2/favicons?sz=64&amp;domain=youtube.com" />
+                                    <TextBlock Text="YouTube" HorizontalAlignment="Center" FontSize="13" Margin="0,9,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button Tag="https://github.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click">
+                                <StackPanel>
+                                    <Image Width="40" Height="40" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"
+                                           Source="https://www.google.com/s2/favicons?sz=64&amp;domain=github.com" />
+                                    <TextBlock Text="GitHub" HorizontalAlignment="Center" FontSize="13" Margin="0,9,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button Tag="https://developer.mozilla.org" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click">
+                                <StackPanel>
+                                    <Image Width="40" Height="40" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"
+                                           Source="https://www.google.com/s2/favicons?sz=64&amp;domain=developer.mozilla.org" />
+                                    <TextBlock Text="MDN" HorizontalAlignment="Center" FontSize="13" Margin="0,9,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button Tag="https://www.reddit.com" Style="{StaticResource QuickLinkButton}" Click="QuickLink_Click">
+                                <StackPanel>
+                                    <Image Width="40" Height="40" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"
+                                           Source="https://www.google.com/s2/favicons?sz=64&amp;domain=reddit.com" />
+                                    <TextBlock Text="Reddit" HorizontalAlignment="Center" FontSize="13" Margin="0,9,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource QuickLinkButton}" Click="AddLink_Click">
+                                <StackPanel>
+                                    <Border Width="42" Height="42" CornerRadius="13" Background="Transparent" BorderBrush="#A855F7" BorderThickness="1.4" HorizontalAlignment="Center">
+                                        <TextBlock Text="+" Foreground="#D8B4FE" FontSize="24" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="Hinzufügen" HorizontalAlignment="Center" FontSize="13" Margin="0,9,0,0" />
+                                </StackPanel>
+                            </Button>
                         </UniformGrid>
                     </StackPanel>
                 </Grid>
@@ -2593,6 +2715,16 @@
                     <Button Content="Schliessen" HorizontalAlignment="Right" Style="{StaticResource InternalButton}" Click="CloseGoogleNotice_Click" />
                 </StackPanel>
             </Border>
+
+            <!-- Neon-Kontextmenue fuer Webseiten (Linksklick) -->
+            <Popup x:Name="WebContextMenu" AllowsTransparency="True" StaysOpen="False" Placement="Mouse" PopupAnimation="Fade">
+                <Border CornerRadius="8" Background="#1E1E1E" BorderBrush="#A855F7" BorderThickness="1" Padding="6" MinWidth="226">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="26" ShadowDepth="0" Color="#A855F7" Opacity="0.55" />
+                    </Border.Effect>
+                    <StackPanel x:Name="WebContextMenuItems" />
+                </Border>
+            </Popup>
 
             <Border x:Name="TrackerToast"
                     Width="260"

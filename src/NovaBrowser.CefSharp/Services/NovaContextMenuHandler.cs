@@ -3,14 +3,16 @@ using CefSharp.Handler;
 
 namespace NovaBrowser.App.Services;
 
+// Unterdrueckt das native CEF-Kontextmenue und meldet den Klick-Kontext
+// (Link / Bild / Seite) an die App, die ein eigenes Neon-Menue (WPF-Popup) zeigt.
 public sealed class NovaContextMenuHandler : ContextMenuHandler
 {
-    private static readonly CefMenuCommand InspectElementCommand = CefMenuCommand.UserFirst;
-    private readonly Action<string> _showStatus;
+    private readonly Action<string, string, string> _showMenu;
 
-    public NovaContextMenuHandler(Action<string> showStatus)
+    // showMenu(linkUrl, imageUrl, pageUrl) — wird vom Aufrufer auf den UI-Thread marshalled.
+    public NovaContextMenuHandler(Action<string, string, string> showMenu)
     {
-        _showStatus = showStatus;
+        _showMenu = showMenu;
     }
 
     protected override void OnBeforeContextMenu(
@@ -20,29 +22,26 @@ public sealed class NovaContextMenuHandler : ContextMenuHandler
         IContextMenuParams parameters,
         IMenuModel model)
     {
-        if (model.Count > 0)
-        {
-            model.AddSeparator();
-        }
+        var link = parameters.LinkUrl ?? "";
+        var image = parameters.HasImageContents ? parameters.SourceUrl ?? "" : "";
+        var page = parameters.PageUrl ?? "";
 
-        model.AddItem(InspectElementCommand, "Untersuchen");
+        // Natives Menue komplett entfernen.
+        model.Clear();
+
+        _showMenu(link, image, page);
     }
 
-    protected override bool OnContextMenuCommand(
+    protected override bool RunContextMenu(
         IWebBrowser chromiumWebBrowser,
         IBrowser browser,
         IFrame frame,
         IContextMenuParams parameters,
-        CefMenuCommand commandId,
-        CefEventFlags eventFlags)
+        IMenuModel model,
+        IRunContextMenuCallback callback)
     {
-        if (commandId != InspectElementCommand)
-        {
-            return false;
-        }
-
-        browser.GetHost().ShowDevTools(windowInfo: null, inspectElementAtX: parameters.XCoord, inspectElementAtY: parameters.YCoord);
-        _showStatus("DevTools geoeffnet.");
+        // Modell ist leer -> wir rendern unser eigenes WPF-Menue. CEF soll nichts zeigen.
+        callback.Cancel();
         return true;
     }
 }
