@@ -140,7 +140,7 @@
 
         <Style x:Key="NovaDownloadProgressBar" TargetType="ProgressBar">
             <Setter Property="Height" Value="8" />
-            <Setter Property="Foreground" Value="{StaticResource NovaButton}" />
+            <Setter Property="Foreground" Value="{DynamicResource NovaButton}" />
             <Setter Property="Background" Value="#1a1027" />
             <Setter Property="BorderBrush" Value="#4d2a6f" />
             <Setter Property="BorderThickness" Value="1" />
@@ -150,7 +150,7 @@
                         <Grid ClipToBounds="True">
                             <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5" />
                             <Decorator x:Name="PART_Indicator" HorizontalAlignment="Left">
-                                <Border CornerRadius="5" Background="{StaticResource NovaButton}">
+                                <Border CornerRadius="5" Background="{DynamicResource NovaButton}">
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#b967ff" Opacity="0.55" />
                                     </Border.Effect>
@@ -166,7 +166,7 @@
             <Setter Property="Height" Value="38" />
             <Setter Property="Padding" Value="16,0" />
             <Setter Property="Foreground" Value="#ffffff" />
-            <Setter Property="Background" Value="{StaticResource NovaButton}" />
+            <Setter Property="Background" Value="{DynamicResource NovaButton}" />
             <Setter Property="BorderBrush" Value="#c58cff" />
             <Setter Property="FontFamily" Value="Segoe UI" />
             <Setter Property="FontWeight" Value="Bold" />
@@ -296,6 +296,22 @@
             </Setter>
         </Style>
 
+        <Style x:Key="TelegramBotComboBoxItem" TargetType="ComboBoxItem" BasedOn="{StaticResource AddressEngineComboBoxItem}">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="14,10" />
+        </Style>
+
+        <Style x:Key="TelegramBotComboBox" TargetType="ComboBox" BasedOn="{StaticResource AddressEngineComboBox}">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="MinWidth" Value="310" />
+            <Setter Property="Background" Value="#1b1028" />
+            <Setter Property="BorderBrush" Value="#9f4cff" />
+            <Setter Property="Foreground" Value="#ffffff" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource TelegramBotComboBoxItem}" />
+        </Style>
+
         <Style x:Key="AddressTextBox" TargetType="TextBox">
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Background" Value="Transparent" />
@@ -334,7 +350,7 @@
             <Setter Property="Foreground" Value="{StaticResource NovaText}" />
         </Style>
         <Style x:Key="NovaCard" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource NovaGlassPanel}" />
+            <Setter Property="Background" Value="{DynamicResource NovaGlassPanel}" />
             <Setter Property="BorderBrush" Value="#b967ff" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="20" />
@@ -348,11 +364,20 @@
         </Style>
         <Style x:Key="InstallAddonButton" TargetType="Button" BasedOn="{StaticResource MenuButton}">
             <Setter Property="Content" Value="Installieren" />
-            <Setter Property="Background" Value="{StaticResource NovaFireButton}" />
-            <Setter Property="BorderBrush" Value="#c08cff" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="#A855F7" />
+            <Setter Property="BorderBrush" Value="#C084FC" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="Black" />
+            <Setter Property="Margin" Value="0" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Installed}" Value="True">
-                    <Setter Property="Content" Value="Installiert" />
+                    <Setter Property="Content" Value="✓ Installiert" />
+                    <Setter Property="Background" Value="#2F2F2F" />
+                    <Setter Property="BorderBrush" Value="#3F3F3F" />
+                    <Setter Property="Foreground" Value="#22C55E" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -848,6 +873,13 @@
                         <Button Content="&#xECAA;" Style="{StaticResource ToolbarButton}" Click="OpenExtensionsPage_Click" ToolTip="Addons" Margin="2,10,2,0" />
                         <Button Content="&#xE713;" Style="{StaticResource ToolbarButton}" Click="Settings_Click" ToolTip="Einstellungen" Margin="2,10,2,0" />
                     </StackPanel>
+                    <Button x:Name="TelegramBotButton"
+                            Content="&#xE8BD;"
+                            Style="{StaticResource ToolbarButton}"
+                            Click="TelegramBot_Click"
+                            ToolTip="Lokaler Telegram Bot"
+                            VerticalAlignment="Bottom"
+                            Margin="2,0,2,18" />
                 </Grid>
             </Border>
 
@@ -1037,6 +1069,406 @@
                 </Grid>
             </Border>
 
+            <Border x:Name="TelegramBotPanel"
+                    Grid.Column="1"
+                    Width="360"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Stretch"
+                    Background="#f5060610"
+                    BorderBrush="#b967ff"
+                    BorderThickness="0,0,1.4,0"
+                    Opacity="0"
+                    Visibility="Collapsed"
+                    Panel.ZIndex="42"
+                    RenderTransformOrigin="0,0.5">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="TelegramBotPanelTransform" X="-28" />
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="42" ShadowDepth="0" Color="#8f42ff" Opacity="0.42" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="4" />
+                    </Grid.ColumnDefinitions>
+
+                    <ScrollViewer Grid.Column="0"
+                                  VerticalScrollBarVisibility="Hidden"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="14,14,12,14">
+                            <Border CornerRadius="20"
+                                    Padding="14"
+                                    Margin="0,0,0,14"
+                                    BorderBrush="#543278"
+                                    BorderThickness="1">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#2b1647" Offset="0" />
+                                        <GradientStop Color="#120b1d" Offset="0.7" />
+                                        <GradientStop Color="#07050c" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <DockPanel>
+                                <Button DockPanel.Dock="Right"
+                                        Content="&#xE711;"
+                                        Width="32"
+                                        Height="32"
+                                        Style="{StaticResource ToolbarButton}"
+                                        Click="CloseTelegramBotPanel_Click"
+                                        ToolTip="Bot schliessen" />
+                                <Border DockPanel.Dock="Left"
+                                        Width="42"
+                                        Height="42"
+                                        CornerRadius="16"
+                                        Background="{DynamicResource NovaButton}"
+                                        Margin="0,0,12,0">
+                                    <TextBlock Text="&#xE8BD;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               Foreground="White"
+                                               FontSize="20"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="NOVA BOT"
+                                               Foreground="#f2eaff"
+                                               FontSize="18"
+                                               FontWeight="Black" />
+                                    <TextBlock Text="Lokaler Telegram-Updatebot"
+                                               Foreground="#9d91ad"
+                                               FontSize="12"
+                                               Margin="0,4,0,0" />
+                                </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <Border Background="#b90c0a14"
+                                    BorderBrush="#49306b"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="13"
+                                    Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Bereich auswaehlen"
+                                               Foreground="{StaticResource NovaText}"
+                                               FontWeight="Bold"
+                                               Margin="0,0,0,7" />
+                                    <ComboBox x:Name="TelegramBotModeBox"
+                                              Style="{StaticResource TelegramBotComboBox}"
+                                              SelectedIndex="0"
+                                              SelectionChanged="TelegramBotModeBox_SelectionChanged">
+                                        <ComboBoxItem Content="Startseite" />
+                                        <ComboBoxItem Content="Toolbar &amp; Adressleiste" />
+                                        <ComboBoxItem Content="Tabs &amp; Fenster" />
+                                        <ComboBoxItem Content="Drei-Punkte-Menue" />
+                                        <ComboBoxItem Content="Erweiterungen &amp; Addons" />
+                                        <ComboBoxItem Content="Downloads" />
+                                        <ComboBoxItem Content="Verlauf" />
+                                        <ComboBoxItem Content="Einstellungen" />
+                                        <ComboBoxItem Content="Layouts &amp; Design" />
+                                        <ComboBoxItem Content="Media &amp; Webseiten" />
+                                        <ComboBoxItem Content="Ersteller &amp; Rollen" />
+                                        <ComboBoxItem Content="Telegram Zugang" />
+                                    </ComboBox>
+                                    <TextBlock x:Name="TelegramBotModeInfoText"
+                                               Text="Update-Text schreiben, Screenshot waehlen und an Telegram senden."
+                                               Foreground="#8f86a1"
+                                               FontSize="11"
+                                               Margin="0,8,0,0"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#b90c0a14"
+                                    BorderBrush="#49306b"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="13"
+                                    Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Was wurde gemacht"
+                                               Foreground="{StaticResource NovaText}"
+                                               FontWeight="Bold"
+                                               Margin="0,0,0,7" />
+                                    <ComboBox x:Name="TelegramBotChangeTypeBox"
+                                              Style="{StaticResource TelegramBotComboBox}"
+                                              SelectedIndex="0"
+                                              SelectionChanged="TelegramBotChangeTypeBox_SelectionChanged">
+                                        <ComboBoxItem Content="Anpassung" />
+                                        <ComboBoxItem Content="Verbesserung" />
+                                        <ComboBoxItem Content="Bugfix" />
+                                        <ComboBoxItem Content="Neue Funktion" />
+                                        <ComboBoxItem Content="Design &amp; Layout" />
+                                        <ComboBoxItem Content="Entfernt" />
+                                        <ComboBoxItem Content="Sonstiges" />
+                                    </ComboBox>
+                                    <TextBlock Text="Art der Aenderung. Wird im Telegram-Update als Kennzeichnung mitgesendet."
+                                               Foreground="#8f86a1"
+                                               FontSize="11"
+                                               Margin="0,8,0,0"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border x:Name="TelegramBotCredentialPanel"
+                                    Background="#b90c0a14"
+                                    BorderBrush="#49306b"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="13"
+                                    Margin="0,0,0,12"
+                                    Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock Text="Bot Token"
+                                               Foreground="{StaticResource NovaText}"
+                                               FontWeight="Bold"
+                                               Margin="0,0,0,7" />
+                                    <PasswordBox x:Name="TelegramBotTokenBox"
+                                                 Height="38"
+                                                 Background="#120d1b"
+                                                 Foreground="{StaticResource NovaText}"
+                                                 BorderBrush="#7d37ff"
+                                                 BorderThickness="1"
+                                                 Padding="10,0"
+                                                 VerticalContentAlignment="Center"
+                                                 CaretBrush="#c08cff" />
+
+                                    <TextBlock Text="Chat ID oder Channel"
+                                               Foreground="{StaticResource NovaText}"
+                                               FontWeight="Bold"
+                                               Margin="0,14,0,7" />
+                                    <TextBox x:Name="TelegramBotChatIdBox"
+                                             Height="38"
+                                             Background="#120d1b"
+                                             Foreground="{StaticResource NovaText}"
+                                             BorderBrush="#7d37ff"
+                                             BorderThickness="1"
+                                             Padding="10,0"
+                                             VerticalContentAlignment="Center"
+                                             CaretBrush="#c08cff"
+                                             SelectionBrush="#8f42ff" />
+                                    <TextBlock Text="Channel: @deinchannel oder -100... Bot muss Admin sein."
+                                               Foreground="#8f86a1"
+                                               FontSize="11"
+                                               Margin="0,6,0,0"
+                                               TextWrapping="Wrap" />
+
+                                    <CheckBox x:Name="TelegramBotRememberTokenCheckBox"
+                                              Content="Token lokal verschluesselt merken"
+                                              IsChecked="True"
+                                              Foreground="#cfc2e5"
+                                              Margin="0,14,0,0" />
+                                    <CheckBox x:Name="TelegramBotEnabledCheckBox"
+                                              Content="Bot fuer Update-Checks aktivieren"
+                                              Foreground="#cfc2e5"
+                                              Margin="0,8,0,0" />
+
+                                    <Button Content="Einstellungen speichern"
+                                            Height="38"
+                                            Style="{StaticResource NovaActionButton}"
+                                            Margin="0,14,0,0"
+                                            Click="SaveTelegramBotSettings_Click" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#b90c0a14"
+                                    BorderBrush="#49306b"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="13"
+                                    Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Update-Text"
+                                               Foreground="{StaticResource NovaText}"
+                                               FontWeight="Bold"
+                                               Margin="0,0,0,7" />
+                                    <TextBox x:Name="TelegramBotMessageBox"
+                                             MinHeight="86"
+                                             MaxHeight="140"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Background="#120d1b"
+                                             Foreground="{StaticResource NovaText}"
+                                             BorderBrush="#7d37ff"
+                                             BorderThickness="1"
+                                             Padding="10"
+                                             CaretBrush="#c08cff"
+                                             SelectionBrush="#8f42ff"
+                                             Text="Schreibe hier, was geaendert wurde..."
+                                             GotFocus="TelegramBotMessageBox_GotFocus" />
+                                    <TextBlock Text="Dieser Text wird zusammen mit Screenshot und Aenderungsliste gesendet."
+                                               Foreground="#8f86a1"
+                                               FontSize="11"
+                                               Margin="0,6,0,0"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0"
+                                        Content="Webseite pruefen"
+                                        Height="36"
+                                        Style="{StaticResource NovaActionButton}"
+                                        Click="TelegramBotAnalyze_Click" />
+                                <Button Grid.Column="2"
+                                        Content="Update senden"
+                                        Height="36"
+                                        Style="{StaticResource NovaActionButton}"
+                                        Click="TelegramBotSend_Click" />
+                            </Grid>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0"
+                                        Content="Browser-Screenshot"
+                                        Height="36"
+                                        Style="{StaticResource NovaActionButton}"
+                                        Click="TelegramBotCaptureBrowser_Click" />
+                                <Button Grid.Column="2"
+                                        Content="Bild auswaehlen"
+                                        Height="36"
+                                        Style="{StaticResource NovaActionButton}"
+                                        Click="TelegramBotPickImage_Click" />
+                            </Grid>
+
+                            <Border Background="#9a140d20"
+                                    BorderBrush="#40285d"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="12"
+                                    Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock x:Name="TelegramBotStatusText"
+                                               Text="Noch nicht verbunden."
+                                               Foreground="#c08cff"
+                                               FontWeight="Bold"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock x:Name="TelegramBotSummaryText"
+                                               Text="Waehle Browser-Screenshot, Bild auswaehlen oder pruefe eine Webseite."
+                                               Foreground="#aaa0ba"
+                                               FontSize="12"
+                                               Margin="0,6,0,0"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Text="Aenderungen"
+                                       Foreground="{StaticResource NovaText}"
+                                       FontSize="15"
+                                       FontWeight="Black"
+                                       Margin="0,0,0,10" />
+                            <ListBox x:Name="TelegramBotChangeListBox"
+                                     ItemsSource="{Binding TelegramBotChanges}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     VirtualizingPanel.ScrollUnit="Pixel"
+                                     MouseDoubleClick="TelegramBotChange_DoubleClick">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="Margin" Value="0,0,0,8" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <ContentPresenter />
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="10"
+                                                Margin="0,0,0,8"
+                                                Background="#22152e"
+                                                BorderBrush="#4f2f75"
+                                                BorderThickness="1"
+                                                CornerRadius="14">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Left"
+                                                        Width="34"
+                                                        Height="34"
+                                                        CornerRadius="17"
+                                                        Background="#2b173d"
+                                                        BorderBrush="#9f61ff"
+                                                        BorderThickness="1"
+                                                        VerticalAlignment="Top"
+                                                        Margin="0,0,10,0">
+                                                    <TextBlock Text="{Binding Icon}"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               Foreground="#f6edff"
+                                                               FontSize="15"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center" />
+                                                </Border>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Title}"
+                                                               Foreground="{StaticResource NovaText}"
+                                                               FontWeight="Bold"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Detail}"
+                                                               Foreground="{StaticResource MutedText}"
+                                                               FontSize="11"
+                                                               Margin="0,3,0,0"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="Doppelklick oeffnet die Zielseite"
+                                                               Foreground="#c08cff"
+                                                               FontSize="11"
+                                                               Margin="0,6,0,0"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Grid.Column="1"
+                            Width="4"
+                            CornerRadius="3"
+                            Opacity="0.84">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop x:Name="BotEdgeA" Color="#00d9ff" Offset="-0.25" />
+                                <GradientStop x:Name="BotEdgeB" Color="#c08cff" Offset="0.1" />
+                                <GradientStop x:Name="BotEdgeC" Color="#00000000" Offset="0.42" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Color="#b967ff" Opacity="0.82" />
+                        </Border.Effect>
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="BotEdgeA" Storyboard.TargetProperty="Offset" From="-0.35" To="0.78" Duration="0:0:3.8" />
+                                        <DoubleAnimation Storyboard.TargetName="BotEdgeB" Storyboard.TargetProperty="Offset" From="-0.08" To="1.05" Duration="0:0:3.8" />
+                                        <DoubleAnimation Storyboard.TargetName="BotEdgeC" Storyboard.TargetProperty="Offset" From="0.24" To="1.28" Duration="0:0:3.8" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Border.Triggers>
+                    </Border>
+                </Grid>
+            </Border>
             <ContentControl x:Name="BrowserHost" Grid.Column="1" Panel.ZIndex="0" ClipToBounds="True" Background="#0b0911" />
 
             <Border x:Name="FindBar"
@@ -1079,7 +1511,7 @@
                 </Grid>
             </Border>
 
-            <Grid x:Name="InternalHost" Grid.Column="1" Visibility="Collapsed" Background="{StaticResource NovaAuroraBackground}">
+            <Grid x:Name="InternalHost" Grid.Column="1" Visibility="Collapsed" Background="{DynamicResource NovaAuroraBackground}">
                 <Grid IsHitTestVisible="False" Opacity="0.78">
                     <Ellipse Width="560" Height="360" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-120,-120,0" Fill="#402088">
                         <Ellipse.Effect>
@@ -1100,7 +1532,7 @@
 
                 <Grid x:Name="StartPage" Visibility="Collapsed" Margin="72,48">
                     <StackPanel Width="980" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Border Width="96" Height="96" CornerRadius="30" HorizontalAlignment="Center" Background="{StaticResource NovaButton}" BorderBrush="#d9b8ff" BorderThickness="1">
+                        <Border Width="96" Height="96" CornerRadius="30" HorizontalAlignment="Center" Background="{DynamicResource NovaButton}" BorderBrush="#d9b8ff" BorderThickness="1">
                             <TextBlock Text="N" Foreground="White" FontSize="54" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock.Effect>
                                     <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#ffffff" Opacity="0.3" />
@@ -1123,7 +1555,7 @@
                                     <ColumnDefinition Width="58" />
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="StartSearchBox" BorderThickness="0" Background="Transparent" Foreground="{StaticResource NovaText}" CaretBrush="#f3ecff" FontSize="18" FontWeight="SemiBold" VerticalContentAlignment="Center" KeyDown="StartSearchBox_KeyDown" Text="Suche oder URL eingeben" GotFocus="StartSearchBox_GotFocus" />
-                                <Button Grid.Column="1" Content="&#xE72A;" Width="48" Height="48" Background="{StaticResource NovaButton}" BorderBrush="#c58cff" Foreground="White" FontWeight="Black" Style="{StaticResource ToolbarButton}" Click="StartSearch_Click" />
+                                <Button Grid.Column="1" Content="&#xE72A;" Width="48" Height="48" Background="{DynamicResource NovaButton}" BorderBrush="#c58cff" Foreground="White" FontWeight="Black" Style="{StaticResource ToolbarButton}" Click="StartSearch_Click" />
                             </Grid>
                         </Border>
 
@@ -1188,7 +1620,7 @@
 
                 <Grid x:Name="AuthCallbackPage" Visibility="Collapsed" Margin="80,42">
                     <StackPanel Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Border Width="76" Height="76" CornerRadius="24" HorizontalAlignment="Center" Background="{StaticResource NovaButton}" BorderBrush="#d9b8ff" BorderThickness="1">
+                        <Border Width="76" Height="76" CornerRadius="24" HorizontalAlignment="Center" Background="{DynamicResource NovaButton}" BorderBrush="#d9b8ff" BorderThickness="1">
                             <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" Foreground="White" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock Text="Google Callback erhalten" Foreground="{StaticResource NovaText}" FontSize="34" FontWeight="Black" HorizontalAlignment="Center" Margin="0,18,0,0" />
@@ -1433,6 +1865,12 @@
                                             <TextBlock Text="Lesezeichen" Foreground="#d7cae8" />
                                         </DockPanel>
                                     </Border>
+                                    <Border x:Name="SettingsNavDownloads" CornerRadius="12" Background="#120d19" Padding="12,10" Margin="0,0,0,8" Cursor="Hand" MouseLeftButtonDown="SettingsNavDownloads_Click">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Left" Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="#b895d7" Width="28" />
+                                            <TextBlock Text="Downloads" Foreground="#d7cae8" />
+                                        </DockPanel>
+                                    </Border>
 
                                     <TextBlock Text="NOVA" Foreground="#9b7abb" FontSize="11" FontWeight="Bold" Margin="4,14,0,8" />
                                     <Border x:Name="SettingsNavAddons" CornerRadius="12" Background="#120d19" Padding="12,10" Margin="0,0,0,8" Cursor="Hand" MouseLeftButtonDown="SettingsNavAddons_Click">
@@ -1457,8 +1895,8 @@
                             </Border>
 
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="EINSTELLUNGEN" Foreground="{StaticResource NovaText}" FontSize="38" FontWeight="Black" HorizontalAlignment="Center" Margin="0,0,0,6" />
-                                <TextBlock Text="NyxNova steuert Design, Suche, Addons und Updates an einem Ort." Foreground="#bda9d9" FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,22" />
+                                <TextBlock x:Name="SettingsPageTitle" Text="DESIGN UND STARTSEITE" Foreground="{StaticResource NovaText}" FontSize="38" FontWeight="Black" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                                <TextBlock x:Name="SettingsPageSubtitle" Text="Aussehen, Startseite und Nova-Oberflaeche." Foreground="#bda9d9" FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,22" />
 
                                 <Border CornerRadius="16" Background="#d20c0915" BorderBrush="#503069" BorderThickness="1" Padding="12" Margin="0,0,0,24">
                                     <Grid>
@@ -1471,145 +1909,226 @@
                                     </Grid>
                                 </Border>
 
-                                <UniformGrid x:Name="SettingsDesignSection" Columns="4" Margin="0,0,0,22">
-                                    <Border CornerRadius="16" Background="#1a101f" BorderBrush="#ff2f8f" BorderThickness="1.2" Padding="14" Margin="0,0,10,0">
+                                <!-- DESIGN: Theme-Auswahl (nova://settings/design) -->
+                                <UniformGrid x:Name="SettingsDesignSection" Columns="4" Margin="0,0,0,16">
+                                    <Border x:Name="ThemeCardNovaNeon" CornerRadius="16" Background="#1a101f" BorderBrush="#ff2f8f" BorderThickness="1.2" Padding="14" Margin="0,0,10,0" Cursor="Hand" MouseLeftButtonDown="ThemeCardNovaNeon_Click">
                                         <StackPanel>
                                             <Border Height="72" CornerRadius="10" Background="#111018" BorderBrush="#ff2f8f" BorderThickness="1">
                                                 <TextBlock Text="&#xE790;" FontFamily="Segoe MDL2 Assets" Foreground="#ff4ea7" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
                                             <TextBlock Text="Nova Neon" Foreground="{StaticResource NovaText}" FontWeight="Bold" Margin="0,10,0,2" />
-                                            <TextBlock Text="Aktiv" Foreground="#ff79bd" FontSize="12" />
+                                            <TextBlock x:Name="ThemeStatusNovaNeon" Text="Aktiv" Foreground="#ff79bd" FontSize="12" />
                                         </StackPanel>
                                     </Border>
-                                    <Border CornerRadius="16" Background="#15101d" BorderBrush="#6a40a2" BorderThickness="1" Padding="14" Margin="0,0,10,0">
+                                    <Border x:Name="ThemeCardAurora" CornerRadius="16" Background="#15101d" BorderBrush="#6a40a2" BorderThickness="1" Padding="14" Margin="0,0,10,0" Cursor="Hand" MouseLeftButtonDown="ThemeCardAurora_Click">
                                         <StackPanel>
                                             <Border Height="72" CornerRadius="10" Background="#0c0b12" BorderBrush="#8d62ca" BorderThickness="1">
                                                 <TextBlock Text="&#xE771;" FontFamily="Segoe MDL2 Assets" Foreground="#b967ff" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
                                             <TextBlock Text="Aurora" Foreground="{StaticResource NovaText}" FontWeight="Bold" Margin="0,10,0,2" />
-                                            <TextBlock Text="Startseite" Foreground="#aa93c6" FontSize="12" />
+                                            <TextBlock x:Name="ThemeStatusAurora" Text="Eisblau" Foreground="#aa93c6" FontSize="12" />
                                         </StackPanel>
                                     </Border>
-                                    <Border CornerRadius="16" Background="#15101d" BorderBrush="#3b2a55" BorderThickness="1" Padding="14" Margin="0,0,10,0">
+                                    <Border x:Name="ThemeCardFokus" CornerRadius="16" Background="#15101d" BorderBrush="#3b2a55" BorderThickness="1" Padding="14" Margin="0,0,10,0" Cursor="Hand" MouseLeftButtonDown="ThemeCardFokus_Click">
                                         <StackPanel>
                                             <Border Height="72" CornerRadius="10" Background="#0c0b12" BorderBrush="#4b2d73" BorderThickness="1">
                                                 <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" Foreground="#8cc8ff" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
                                             <TextBlock Text="Fokus" Foreground="{StaticResource NovaText}" FontWeight="Bold" Margin="0,10,0,2" />
-                                            <TextBlock Text="Ruhig" Foreground="#aa93c6" FontSize="12" />
+                                            <TextBlock x:Name="ThemeStatusFokus" Text="Ruhig" Foreground="#aa93c6" FontSize="12" />
                                         </StackPanel>
                                     </Border>
-                                    <Border CornerRadius="16" Background="#15101d" BorderBrush="#3b2a55" BorderThickness="1" Padding="14">
+                                    <Border x:Name="ThemeCardGlas" CornerRadius="16" Background="#15101d" BorderBrush="#3b2a55" BorderThickness="1" Padding="14" Cursor="Hand" MouseLeftButtonDown="ThemeCardGlas_Click">
                                         <StackPanel>
                                             <Border Height="72" CornerRadius="10" Background="#0c0b12" BorderBrush="#4b2d73" BorderThickness="1">
                                                 <TextBlock Text="&#xE793;" FontFamily="Segoe MDL2 Assets" Foreground="#ff7fd6" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
                                             <TextBlock Text="Glas" Foreground="{StaticResource NovaText}" FontWeight="Bold" Margin="0,10,0,2" />
-                                            <TextBlock Text="Panels" Foreground="#aa93c6" FontSize="12" />
+                                            <TextBlock x:Name="ThemeStatusGlas" Text="Panels" Foreground="#aa93c6" FontSize="12" />
                                         </StackPanel>
                                     </Border>
                                 </UniformGrid>
 
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="20" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0">
-                                        <Border x:Name="SettingsSearchSection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16">
-                                            <StackPanel>
-                                                <DockPanel Margin="0,0,0,14">
-                                                    <TextBlock Text="Suche" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
-                                                    <TextBlock DockPanel.Dock="Right" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
-                                                </DockPanel>
-                                                <TextBlock Text="Suchmaschine fuer Adressleiste und Startseite." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,10" />
-                                                <ComboBox x:Name="SettingsSearchEngineBox" Height="38" SelectionChanged="SettingsSearchEngineBox_SelectionChanged">
-                                                    <ComboBoxItem Content="Google" />
-                                                    <ComboBoxItem Content="DuckDuckGo" />
-                                                    <ComboBoxItem Content="Bing" />
-                                                </ComboBox>
-                                            </StackPanel>
-                                        </Border>
-
-                                        <Border x:Name="SettingsStartSection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16">
-                                            <StackPanel>
-                                                <DockPanel Margin="0,0,0,14">
-                                                    <TextBlock Text="Start und Oberflaeche" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
-                                                    <TextBlock DockPanel.Dock="Right" Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
-                                                </DockPanel>
-                                                <Grid Margin="0,0,0,10">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel>
-                                                        <TextBlock Text="Startseite" Foreground="{StaticResource NovaText}" FontWeight="SemiBold" />
-                                                        <TextBlock Text="nova://start mit NyxNova Hintergrund" Foreground="{StaticResource MutedText}" FontSize="12" />
-                                                    </StackPanel>
-                                                    <TextBlock Grid.Column="1" Text="Aktiv" Foreground="#c987ff" FontWeight="Bold" VerticalAlignment="Center" />
-                                                </Grid>
-                                                <CheckBox x:Name="BookmarkBarCheckBox" Content="Lesezeichenleiste anzeigen" Foreground="{StaticResource NovaText}" Checked="BookmarkBarCheckBox_Changed" Unchecked="BookmarkBarCheckBox_Changed" />
-                                            </StackPanel>
-                                        </Border>
-
-                                        <Border Style="{StaticResource NovaCard}" Padding="22">
-                                            <StackPanel>
-                                                <DockPanel Margin="0,0,0,14">
-                                                    <TextBlock Text="Downloads" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
-                                                    <TextBlock DockPanel.Dock="Right" Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
-                                                </DockPanel>
-                                                <TextBlock Text="Dateien landen im Windows-Downloads-Ordner. Der Toolbar-Button zeigt laufende Downloads als Nova-Popup." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
-                                                <Button Content="Download-Seite oeffnen" Style="{StaticResource InternalButton}" HorizontalAlignment="Left" Margin="0,14,0,0" Click="Downloads_Click" />
-                                            </StackPanel>
-                                        </Border>
+                                <!-- SUCHE (nova://settings/search) -->
+                                <Border x:Name="SettingsSearchSection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16" Visibility="Collapsed">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,14">
+                                            <TextBlock Text="Suche" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
+                                            <TextBlock DockPanel.Dock="Right" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
+                                        </DockPanel>
+                                        <TextBlock Text="Suchmaschine fuer Adressleiste und Startseite." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                                        <ComboBox x:Name="SettingsSearchEngineBox" Height="38" SelectionChanged="SettingsSearchEngineBox_SelectionChanged">
+                                            <ComboBoxItem Content="Google" />
+                                            <ComboBoxItem Content="DuckDuckGo" />
+                                            <ComboBoxItem Content="Bing" />
+                                        </ComboBox>
                                     </StackPanel>
+                                </Border>
 
-                                    <StackPanel Grid.Column="2">
-                                        <Border x:Name="SettingsAddonsSection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16">
+                                <!-- START UND OBERFLAECHE / LESEZEICHEN (nova://settings/design + /bookmarks) -->
+                                <Border x:Name="SettingsStartSection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,14">
+                                            <TextBlock Text="Start und Oberflaeche" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
+                                            <TextBlock DockPanel.Dock="Right" Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
+                                        </DockPanel>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <DockPanel Margin="0,0,0,14">
-                                                    <TextBlock Text="Nova Addons" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
-                                                    <TextBlock DockPanel.Dock="Right" Text="&#xECAA;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
-                                                </DockPanel>
-                                                <TextBlock Text="Erweiterungen, Store und gepinnte Addons bleiben getrennt von Quick Links." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,12" />
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Button Content="Addons verwalten" Style="{StaticResource InternalButton}" Click="OpenExtensionsPage_Click" />
-                                                    <Button Content="NovaStore" Style="{StaticResource InternalButton}" Margin="10,0,0,0" Click="OpenStore_Click" />
-                                                </StackPanel>
+                                                <TextBlock Text="Startseite" Foreground="{StaticResource NovaText}" FontWeight="SemiBold" />
+                                                <TextBlock Text="nova://start mit NyxNova Hintergrund" Foreground="{StaticResource MutedText}" FontSize="12" />
                                             </StackPanel>
-                                        </Border>
-
-                                        <Border x:Name="SettingsPrivacySection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16">
-                                            <StackPanel>
-                                                <DockPanel Margin="0,0,0,14">
-                                                    <TextBlock Text="Datenschutz und Medien" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
-                                                    <TextBlock DockPanel.Dock="Right" Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
-                                                </DockPanel>
-                                                <TextBlock Text="Persistente Cookies, Cache, LocalStorage und sichere CEF-WebSecurity bleiben aktiv. Media-Diagnose prueft MP4/H.264/AAC/WebM." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
-                                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                                                    <Button Content="Diagnose" Style="{StaticResource InternalButton}" Click="OpenDiagnostics_Click" />
-                                                    <Button Content="Media" Style="{StaticResource InternalButton}" Margin="10,0,0,0" Click="OpenMediaDiagnostics_Click" />
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-
-                                        <Border x:Name="SettingsBuildSection" Style="{StaticResource NovaCard}" Padding="22">
-                                            <StackPanel>
-                                                <DockPanel Margin="0,0,0,14">
-                                                    <TextBlock Text="Build und Beta Update" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
-                                                    <TextBlock DockPanel.Dock="Right" Text="&#xE895;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
-                                                </DockPanel>
-                                                <TextBlock x:Name="BuildInfoText" Text="Build-Version wird geladen..." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,12" />
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Button Content="Update-Seite" Style="{StaticResource InternalButton}" Click="OpenUpdatePage_Click" />
-                                                    <Button Content="Zuruecksetzen" Style="{StaticResource InternalButton}" Margin="10,0,0,0" Click="ResetSettings_Click" />
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
+                                            <TextBlock Grid.Column="1" Text="Aktiv" Foreground="#c987ff" FontWeight="Bold" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <CheckBox x:Name="BookmarkBarCheckBox" Content="Lesezeichenleiste anzeigen" Foreground="{StaticResource NovaText}" Checked="BookmarkBarCheckBox_Changed" Unchecked="BookmarkBarCheckBox_Changed" />
                                     </StackPanel>
-                                </Grid>
+                                </Border>
+
+                                <!-- DOWNLOADS (nova://settings/downloads) -->
+                                <Border x:Name="SettingsDownloadsSection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16" Visibility="Collapsed">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,14">
+                                            <TextBlock Text="Downloads" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
+                                            <TextBlock DockPanel.Dock="Right" Text="&#xE896;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
+                                        </DockPanel>
+                                        <TextBlock Text="Dateien landen im Windows-Downloads-Ordner. Der Toolbar-Button zeigt laufende Downloads als Nova-Popup." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                        <Button Content="Download-Seite oeffnen" Style="{StaticResource InternalButton}" HorizontalAlignment="Left" Margin="0,14,0,0" Click="Downloads_Click" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- ADDONS UND STORE (nova://settings/addons) -->
+                                <Border x:Name="SettingsAddonsSection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16" Visibility="Collapsed">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,14">
+                                            <TextBlock Text="Nova Addons" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
+                                            <TextBlock DockPanel.Dock="Right" Text="&#xECAA;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
+                                        </DockPanel>
+                                        <TextBlock Text="Erweiterungen, Store und gepinnte Addons bleiben getrennt von Quick Links." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Addons verwalten" Style="{StaticResource InternalButton}" Click="OpenExtensionsPage_Click" />
+                                            <Button Content="NovaStore" Style="{StaticResource InternalButton}" Margin="10,0,0,0" Click="OpenStore_Click" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- DATENSCHUTZ UND MEDIEN (nova://settings/privacy) -->
+                                <Border x:Name="SettingsPrivacySection" Style="{StaticResource NovaCard}" Padding="22" Margin="0,0,0,16" Visibility="Collapsed">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,14">
+                                            <TextBlock Text="Datenschutz und Medien" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
+                                            <TextBlock DockPanel.Dock="Right" Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
+                                        </DockPanel>
+                                        <TextBlock Text="Persistente Cookies, Cache, LocalStorage und sichere CEF-WebSecurity bleiben aktiv. Media-Diagnose prueft MP4/H.264/AAC/WebM." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                        <UniformGrid Columns="2" Margin="0,16,0,0">
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,10,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Tracker Blocker" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Blockiert bekannte Tracking-Hosts mit Nova-Schutzlogik." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="TrackerBlockerCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Aggressiver Tracker Blocker" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Strenger Modus fuer scriptlastige Tracker und Werbe-Netzwerke." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="AggressiveTrackerBlockerCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,10,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="HTTPS-only Modus" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Versucht HTTP-Seiten automatisch als HTTPS zu laden." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="HttpsOnlyModeCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Globaler Fingerprinting-Schutz" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Reduziert wiedererkennbare Browser-Merkmale soweit kompatibel." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="GlobalFingerprintingCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,10,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Tab-Ruhestand" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Inaktive Tabs koennen ressourcenschonend schlafen." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="TabSleepCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Hardware-Beschleunigung" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Nutzt GPU-Unterstuetzung fuer Rendering und Medien." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="HardwareAccelerationCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,10,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Eco Mode" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Reduziert Hintergrundaktivitaet und spart Ressourcen." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="EcoModeCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Smart Session Restore" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Stellt Tabs nach Neustart kontrolliert wieder her." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="SmartSessionRestoreCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,10,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Dark-Mode-Enforcer" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Injiziert ein kleines Farbschema fuer dunkle Webseiten." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="DarkModeEnforcerCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Lazy Loading fuer Medien" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Setzt Bilder und Iframes ressourcensparend auf loading=lazy." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="LazyMediaLoadingCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,10,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Automatischer Schutz" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Nova waehlt Schutzstufe passend zur aktuellen Webseite." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <CheckBox x:Name="AutomaticProtectionCheckBox" Content="Aktiv" Foreground="{StaticResource NovaText}" Checked="PrivacySettingCheckBox_Changed" Unchecked="PrivacySettingCheckBox_Changed" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border CornerRadius="14" Background="#120b1a" BorderBrush="#3a2254" BorderThickness="1" Padding="14" Margin="0,0,0,10">
+                                                <StackPanel>
+                                                    <TextBlock Text="Tracker-Blocker-Daten" Foreground="{StaticResource NovaText}" FontWeight="Black" />
+                                                    <TextBlock Text="Setzt lokale Tracker-Zaehler und Schutz-Hinweise zurueck." Foreground="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,10" />
+                                                    <Button Content="Daten loeschen" Style="{StaticResource InternalButton}" HorizontalAlignment="Left" Click="ClearTrackerData_Click" />
+                                                </StackPanel>
+                                            </Border>
+                                        </UniformGrid>
+                                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                            <Button Content="Diagnose" Style="{StaticResource InternalButton}" Click="OpenDiagnostics_Click" />
+                                            <Button Content="Media" Style="{StaticResource InternalButton}" Margin="10,0,0,0" Click="OpenMediaDiagnostics_Click" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- UPDATE UND BUILD (nova://settings/build) -->
+                                <Border x:Name="SettingsBuildSection" Style="{StaticResource NovaCard}" Padding="22" Visibility="Collapsed">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,14">
+                                            <TextBlock Text="Build und Beta Update" Foreground="{StaticResource NovaText}" FontSize="20" FontWeight="Black" />
+                                            <TextBlock DockPanel.Dock="Right" Text="&#xE895;" FontFamily="Segoe MDL2 Assets" Foreground="#d9b8ff" FontSize="18" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="BuildInfoText" Text="Build-Version wird geladen..." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Update-Seite" Style="{StaticResource InternalButton}" Click="OpenUpdatePage_Click" />
+                                            <Button Content="Zuruecksetzen" Style="{StaticResource InternalButton}" Margin="10,0,0,0" Click="ResetSettings_Click" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>
@@ -1720,10 +2239,10 @@
                     </DockPanel>
                 </Grid>
 
-                <Grid x:Name="StorePage" Visibility="Collapsed" Margin="80,42">
+                <Grid x:Name="StorePage" Visibility="Collapsed" Margin="80,42" Background="#121212">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
-                            <Border Height="170" CornerRadius="28" Background="{StaticResource NovaFlameWash}" BorderBrush="#b967ff" BorderThickness="1.2" Padding="26" Margin="0,0,0,18">
+                            <Border Height="170" CornerRadius="28" Background="{DynamicResource NovaFlameWash}" BorderBrush="#b967ff" BorderThickness="1.2" Padding="26" Margin="0,0,0,18">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -1773,27 +2292,64 @@
                             <ItemsControl x:Name="StoreAddonsList" ItemsSource="{Binding StoreAddons}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <WrapPanel />
+                                        <WrapPanel ItemWidth="360" />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Width="330" Style="{StaticResource NovaCard}">
-                                            <StackPanel>
-                                                <Border Width="56" Height="56" CornerRadius="18" Background="{StaticResource NovaFireButton}" BorderBrush="#ead8ff" BorderThickness="1" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NovaText}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Border>
-                                                <TextBlock Text="{Binding Name}" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" Margin="0,12,0,0" />
-                                                <TextBlock Text="{Binding Description}" Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,8,0,8" />
-                                                <TextBlock Text="{Binding Author, StringFormat=Autor: {0}}" Foreground="{StaticResource MutedText}" />
-                                                <TextBlock Text="{Binding Version, StringFormat=Version {0}}" Foreground="{StaticResource MutedText}" />
-                                                <TextBlock Text="{Binding Rating, StringFormat=Bewertung {0:0.0}/5}" Foreground="{StaticResource MutedText}" />
-                                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                                                    <Button Tag="{Binding}" Style="{StaticResource InstallAddonButton}" Click="InstallAddon_Click" />
-                                                    <Button Content="Details" Tag="{Binding}" Style="{StaticResource MenuButton}" Click="AddonDetails_Click" />
-                                                    <Button Content="Verwalten" Tag="{Binding}" Style="{StaticResource MenuButton}" Click="ManageAddon_Click" />
+                                        <Border Width="336"
+                                                MinHeight="300"
+                                                CornerRadius="12"
+                                                Background="#1E1E1E"
+                                                BorderBrush="#4A2E80"
+                                                BorderThickness="1"
+                                                Padding="24"
+                                                Margin="0,0,24,24">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+
+                                                <Grid Grid.Row="0" Margin="0,0,0,18">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="48" />
+                                                        <ColumnDefinition Width="14" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Width="48" Height="48" CornerRadius="24" Background="#2B1743" BorderBrush="#4A2E80" BorderThickness="1">
+                                                        <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" Foreground="#A855F7" FontSize="22" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Name}" Foreground="#FFFFFF" FontSize="18" FontWeight="Black" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                </Grid>
+
+                                                <TextBlock Grid.Row="1"
+                                                           Text="{Binding Description}"
+                                                           Foreground="#B3B3B3"
+                                                           FontSize="14"
+                                                           LineHeight="21"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,0,0,18" />
+
+                                                <StackPanel Grid.Row="2" Margin="0,0,0,22">
+                                                    <TextBlock Text="{Binding Author, StringFormat=Autor: {0}}" Foreground="#B3B3B3" FontSize="13" Margin="0,0,0,7" />
+                                                    <TextBlock Text="{Binding Version, StringFormat=Version: {0}}" Foreground="#B3B3B3" FontSize="13" Margin="0,0,0,7" />
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="★" Foreground="#A855F7" FontSize="14" Margin="0,0,4,0" />
+                                                        <TextBlock Text="{Binding Rating, StringFormat={}{0:0.0}/5}" Foreground="#B3B3B3" FontSize="13" />
+                                                    </StackPanel>
                                                 </StackPanel>
-                                            </StackPanel>
+
+                                                <StackPanel Grid.Row="3">
+                                                    <Button Tag="{Binding}" Style="{StaticResource InstallAddonButton}" Click="InstallAddon_Click" />
+                                                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                                        <Button Content="Details" Tag="{Binding}" Style="{StaticResource MenuButton}" Foreground="#B3B3B3" Click="AddonDetails_Click" />
+                                                        <Button Content="Verwalten" Tag="{Binding}" Style="{StaticResource MenuButton}" Foreground="#B3B3B3" Click="ManageAddon_Click" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Grid>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -1861,34 +2417,171 @@
                     </ScrollViewer>
                 </Grid>
 
-                <Grid x:Name="AddonDetailPage" Visibility="Collapsed" Margin="80,42">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Width="820">
-                            <Border Height="210" CornerRadius="30" Background="{StaticResource NovaFlameWash}" BorderBrush="#b967ff" BorderThickness="1.4" Padding="24">
-                                <Grid>
-                                    <Border Width="104" Height="104" CornerRadius="28" Background="{StaticResource NovaFireButton}" BorderBrush="#ead8ff" BorderThickness="1" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <TextBlock x:Name="AddonDetailIcon" Text="NA" Foreground="{StaticResource NovaText}" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <StackPanel Margin="132,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock x:Name="AddonDetailName" Text="Addon" Foreground="{StaticResource NovaText}" FontSize="36" FontWeight="Black" />
-                                        <TextBlock x:Name="AddonDetailDescription" Text="" Foreground="#ead8ff" FontSize="15" TextWrapping="Wrap" Margin="0,8,0,0" />
-                                    </StackPanel>
-                                </Grid>
+                <Grid x:Name="AddonDetailPage" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <Grid MaxWidth="1180" HorizontalAlignment="Center" Margin="40,28,40,48">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- ============ 1. HERO-BANNER ============ -->
+                            <Border Grid.Row="0" CornerRadius="16" Background="#1E1E1E" BorderBrush="#4A2E80" BorderThickness="1" Padding="24" Margin="0,0,0,24">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="30" ShadowDepth="0" Color="#000000" Opacity="0.35" />
+                                </Border.Effect>
+                                <StackPanel>
+                                    <Button Content="&#8592; Zurueck zum Store" HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Foreground="#B9B2C9" Cursor="Hand" Padding="0" Margin="0,0,0,16" FontSize="13" Click="OpenStore_Click" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Icon -->
+                                        <Border Grid.Column="0" Width="96" Height="96" CornerRadius="22" VerticalAlignment="Center">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                    <GradientStop Color="#7C3AED" Offset="0" />
+                                                    <GradientStop Color="#6D28D9" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <Border.Effect>
+                                                <DropShadowEffect BlurRadius="26" ShadowDepth="0" Color="#7C3AED" Opacity="0.45" />
+                                            </Border.Effect>
+                                            <TextBlock x:Name="AddonDetailIcon" Text="&#xECAA;" FontFamily="Segoe MDL2 Assets" Foreground="#FFFFFF" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <!-- Titel + Beschreibung + Schnell-Fakten -->
+                                        <StackPanel Grid.Column="1" Margin="24,0,24,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="AddonDetailEyebrow" Text="NOVA ADDON" Foreground="#7C3AED" FontSize="11" FontWeight="SemiBold" />
+                                            <TextBlock x:Name="AddonDetailName" Text="Addon" Foreground="#F4F2F8" FontSize="32" FontWeight="Black" Margin="0,4,0,0" />
+                                            <TextBlock x:Name="AddonDetailDescription" Text="" Foreground="#B9B2C9" FontSize="14" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                                <Border Background="#262626" BorderBrush="#332155" BorderThickness="1" CornerRadius="999" Padding="11,5" Margin="0,0,8,0">
+                                                    <TextBlock x:Name="AddonDetailRatingChip" Text="&#9733; 4,5" Foreground="#FBBF24" FontSize="12.5" FontWeight="SemiBold" />
+                                                </Border>
+                                                <Border Background="#262626" BorderBrush="#2f6b50" BorderThickness="1" CornerRadius="999" Padding="11,5">
+                                                    <TextBlock x:Name="AddonDetailStatusChip" Text="Verifiziert" Foreground="#34D399" FontSize="12.5" FontWeight="SemiBold" />
+                                                </Border>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Call-to-Action -->
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" MinWidth="200">
+                                            <Button x:Name="AddonDetailInstallButton" Content="Installieren" Style="{StaticResource NovaActionButton}" Height="46" HorizontalAlignment="Stretch" FontSize="15" Click="AddonDetailInstall_Click" />
+                                            <TextBlock Text="Kostenlos &#183; Deutsch" Foreground="#8A8398" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
                             </Border>
-                            <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
-                                <Button x:Name="AddonDetailInstallButton" Content="Installieren" Style="{StaticResource InternalButton}" Click="AddonDetailInstall_Click" />
-                                <Button Content="Zurueck zum Store" Style="{StaticResource InternalButton}" Margin="12,0,0,0" Click="OpenStore_Click" />
-                            </StackPanel>
-                            <TextBlock x:Name="AddonDetailMeta" Text="" Foreground="{StaticResource MutedText}" Margin="0,20,0,0" />
-                            <TextBlock Text="Screenshots" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" Margin="0,24,0,10" />
-                            <ItemsControl x:Name="AddonDetailScreenshots" />
-                            <TextBlock Text="Berechtigungen" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" Margin="0,24,0,10" />
-                            <ItemsControl x:Name="AddonDetailPermissions" />
-                            <TextBlock Text="Host-Berechtigungen" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" Margin="0,24,0,10" />
-                            <ItemsControl x:Name="AddonDetailHosts" />
-                            <TextBlock Text="Changelog" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" Margin="0,24,0,10" />
-                            <TextBlock x:Name="AddonDetailChangelog" Text="" Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
-                        </StackPanel>
+
+                            <!-- ============ 2. ZWEISPALTIGES LAYOUT ============ -->
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="320" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Linke Hauptspalte: Screenshots + Changelog -->
+                                <StackPanel Grid.Column="0">
+                                    <!-- Screenshots-Galerie -->
+                                    <Border CornerRadius="16" Background="#1E1E1E" BorderBrush="#4A2E80" BorderThickness="1" Padding="22" Margin="0,0,0,24">
+                                        <StackPanel>
+                                            <TextBlock Text="Screenshots" Foreground="#F4F2F8" FontSize="18" FontWeight="Bold" Margin="0,0,0,14" />
+                                            <ItemsControl x:Name="AddonDetailScreenshots">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Width="232" Height="132" Margin="0,0,12,12" CornerRadius="10" Background="#2E2E2E" BorderBrush="#4A2E80" BorderThickness="1">
+                                                            <TextBlock Text="{Binding}" Foreground="#8A8398" FontSize="12" TextWrapping="Wrap" Margin="12" VerticalAlignment="Bottom" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Changelog -->
+                                    <Border CornerRadius="16" Background="#1E1E1E" BorderBrush="#4A2E80" BorderThickness="1" Padding="22">
+                                        <StackPanel>
+                                            <TextBlock Text="Changelog" Foreground="#F4F2F8" FontSize="18" FontWeight="Bold" Margin="0,0,0,14" />
+                                            <TextBlock x:Name="AddonDetailChangelog" Text="" Foreground="#B9B2C9" FontSize="13.5" TextWrapping="Wrap" LineHeight="21" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Rechte Sidebar: Metadaten + Berechtigungen -->
+                                <StackPanel Grid.Column="2">
+                                    <!-- Informationen / Metadaten -->
+                                    <Border CornerRadius="16" Background="#1E1E1E" BorderBrush="#4A2E80" BorderThickness="1" Padding="20" Margin="0,0,0,24">
+                                        <StackPanel>
+                                            <TextBlock Text="Informationen" Foreground="#F4F2F8" FontSize="16" FontWeight="Bold" Margin="0,0,0,14" />
+
+                                            <DockPanel LastChildFill="False">
+                                                <TextBlock DockPanel.Dock="Left" Text="Version" Foreground="#8A8398" FontSize="13" />
+                                                <TextBlock DockPanel.Dock="Right" x:Name="AddonDetailVersion" Text="-" Foreground="#F4F2F8" FontSize="13" FontWeight="SemiBold" />
+                                            </DockPanel>
+                                            <Border Height="1" Background="#332155" Margin="0,11,0,11" />
+
+                                            <DockPanel LastChildFill="False">
+                                                <TextBlock DockPanel.Dock="Left" Text="Autor" Foreground="#8A8398" FontSize="13" />
+                                                <TextBlock DockPanel.Dock="Right" x:Name="AddonDetailAuthor" Text="-" Foreground="#F4F2F8" FontSize="13" FontWeight="SemiBold" />
+                                            </DockPanel>
+                                            <Border Height="1" Background="#332155" Margin="0,11,0,11" />
+
+                                            <DockPanel LastChildFill="False">
+                                                <TextBlock DockPanel.Dock="Left" Text="Kategorie" Foreground="#8A8398" FontSize="13" />
+                                                <TextBlock DockPanel.Dock="Right" x:Name="AddonDetailCategory" Text="-" Foreground="#F4F2F8" FontSize="13" FontWeight="SemiBold" />
+                                            </DockPanel>
+                                            <Border Height="1" Background="#332155" Margin="0,11,0,11" />
+
+                                            <DockPanel LastChildFill="False">
+                                                <TextBlock DockPanel.Dock="Left" Text="Bewertung" Foreground="#8A8398" FontSize="13" />
+                                                <TextBlock DockPanel.Dock="Right" x:Name="AddonDetailRating" Text="-" Foreground="#FBBF24" FontSize="13" FontWeight="Bold" />
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Berechtigungen -->
+                                    <Border CornerRadius="16" Background="#1E1E1E" BorderBrush="#4A2E80" BorderThickness="1" Padding="20">
+                                        <StackPanel>
+                                            <TextBlock Text="Berechtigungen" Foreground="#F4F2F8" FontSize="16" FontWeight="Bold" Margin="0,0,0,14" />
+                                            <ItemsControl x:Name="AddonDetailPermissions">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,0,0,10">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="20" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Border Width="6" Height="6" CornerRadius="3" Background="#7C3AED" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,6,0,0" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding}" Foreground="#B9B2C9" FontSize="13" TextWrapping="Wrap" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <Border Height="1" Background="#332155" Margin="0,4,0,14" />
+                                            <TextBlock Text="Host-Berechtigungen" Foreground="#8A8398" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" />
+                                            <ItemsControl x:Name="AddonDetailHosts">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" Foreground="#B9B2C9" FontSize="12.5" TextWrapping="Wrap" Margin="0,0,0,7" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
                     </ScrollViewer>
                 </Grid>
             </Grid>
@@ -2260,7 +2953,7 @@
                StaysOpen="False"
                DataContext="{Binding DataContext, ElementName=RootGrid}"
                IsOpen="{Binding Visibility, ElementName=BookmarkPopup, Converter={StaticResource VisibilityToBooleanConverter}, Mode=TwoWay}">
-        <Border x:Name="BookmarkPopup" Width="320" Background="{StaticResource NovaGlassPanel}" BorderBrush="#b967ff" BorderThickness="1" CornerRadius="18" Padding="16" Visibility="Collapsed">
+        <Border x:Name="BookmarkPopup" Width="320" Background="{DynamicResource NovaGlassPanel}" BorderBrush="#b967ff" BorderThickness="1" CornerRadius="18" Padding="16" Visibility="Collapsed">
             <StackPanel>
                 <TextBlock Text="Lesezeichen bearbeiten" Foreground="{StaticResource NovaText}" FontSize="18" FontWeight="Black" />
                 <TextBlock x:Name="BookmarkHintText" Text="" Foreground="{StaticResource MutedText}" Margin="0,8,0,0" TextWrapping="Wrap" />
@@ -2289,7 +2982,7 @@
                AllowsTransparency="False"
                StaysOpen="True"
                DataContext="{Binding DataContext, ElementName=RootGrid}">
-        <Border x:Name="DownloadsPopup" Width="390" MaxHeight="540" Background="{StaticResource NovaGlassPanel}" BorderBrush="#b967ff" BorderThickness="1.4" CornerRadius="20" Padding="16" Visibility="Collapsed">
+        <Border x:Name="DownloadsPopup" Width="390" MaxHeight="540" Background="{DynamicResource NovaGlassPanel}" BorderBrush="#b967ff" BorderThickness="1.4" CornerRadius="20" Padding="16" Visibility="Collapsed">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="28" ShadowDepth="0" Color="#9f4dff" Opacity="0.38" />
             </Border.Effect>

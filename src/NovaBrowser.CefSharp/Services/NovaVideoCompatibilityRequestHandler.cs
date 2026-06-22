@@ -16,20 +16,26 @@ public sealed class NovaVideoCompatibilityRequestHandler : RequestHandler
 {
     private readonly Action<string> _showStatus;
     private readonly Func<string?, bool> _isProtectionDisabled;
+    private readonly Func<bool> _isHttpsOnlyEnabled;
     private readonly Action<BrowserDiagnosticEvent> _recordDiagnostic;
     private readonly Action<string> _handleAuthCallback;
+    private readonly Action<string?, string> _showCrashPage;
     private readonly NovaVideoResourceRequestHandler _resourceHandler;
 
     public NovaVideoCompatibilityRequestHandler(
         Action<string> showStatus,
         Func<string?, bool> isProtectionDisabled,
+        Func<bool> isHttpsOnlyEnabled,
         Action<BrowserDiagnosticEvent> recordDiagnostic,
-        Action<string> handleAuthCallback)
+        Action<string> handleAuthCallback,
+        Action<string?, string> showCrashPage)
     {
         _showStatus = showStatus;
         _isProtectionDisabled = isProtectionDisabled;
+        _isHttpsOnlyEnabled = isHttpsOnlyEnabled;
         _recordDiagnostic = recordDiagnostic;
         _handleAuthCallback = handleAuthCallback;
+        _showCrashPage = showCrashPage;
         _resourceHandler = new NovaVideoResourceRequestHandler(showStatus, isProtectionDisabled, recordDiagnostic);
     }
 
@@ -46,6 +52,24 @@ public sealed class NovaVideoCompatibilityRequestHandler : RequestHandler
             _recordDiagnostic(new BrowserDiagnosticEvent("auth-callback", request.Url, "Nova auth callback received."));
             WriteDiagnostic("auth-callback", request.Url, "Nova auth callback received.");
             _handleAuthCallback(request.Url);
+            return true;
+        }
+
+        if (_isHttpsOnlyEnabled() &&
+            frame.IsMain &&
+            Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) &&
+            string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+        {
+            var builder = new UriBuilder(uri)
+            {
+                Scheme = Uri.UriSchemeHttps,
+                Port = -1
+            };
+
+            var upgradedUrl = builder.Uri.ToString();
+            _recordDiagnostic(new BrowserDiagnosticEvent("https-only-upgrade", request.Url, $"Redirected to {upgradedUrl}."));
+            WriteDiagnostic("https-only-upgrade", request.Url, $"Redirected to {upgradedUrl}.");
+            browser.MainFrame.LoadUrl(upgradedUrl);
             return true;
         }
 
@@ -93,6 +117,7 @@ public sealed class NovaVideoCompatibilityRequestHandler : RequestHandler
         try
         {
             _showStatus("Eine Webseite ist abgestuerzt. Nova bleibt offen; lade den Tab bei Bedarf neu.");
+            _showCrashPage(url, details);
         }
         catch (Exception ex)
         {

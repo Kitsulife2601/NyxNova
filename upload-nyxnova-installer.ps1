@@ -2,7 +2,8 @@ param(
     [string]$Owner = "Kitsulife2601",
     [string]$Repo = "NyxNova",
     [string]$Tag = "",
-    [string]$Commitish = "main"
+    [string]$Commitish = "main",
+    [string]$Pin = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,7 +85,10 @@ namespace NyxNova
             {
                 await stream.WriteAsync(buffer, 0, read).ConfigureAwait(false);
                 uploaded += read;
-                progress(uploaded, length);
+                if (progress != null)
+                {
+                    progress(uploaded, length);
+                }
             }
         }
 
@@ -153,8 +157,13 @@ function Read-NewTokenAndStore {
 function Read-TokenWithPin {
     if (Test-Path -LiteralPath $vaultPath) {
         Write-Host "Gespeicherter GitHub-Token gefunden." -ForegroundColor Green
-        $securePin = Read-Host "PIN" -AsSecureString
-        $pin = Convert-SecureStringToPlainText $securePin
+        if ([string]::IsNullOrWhiteSpace($Pin)) {
+            $securePin = Read-Host "PIN" -AsSecureString
+            $pin = Convert-SecureStringToPlainText $securePin
+        }
+        else {
+            $pin = $Pin
+        }
         try {
             $vault = Get-Content -LiteralPath $vaultPath -Raw | ConvertFrom-Json
             $cipher = [Convert]::FromBase64String([string]$vault.cipher)
@@ -225,32 +234,7 @@ function Send-FileWithProgress {
             [void]$client.DefaultRequestHeaders.TryAddWithoutValidation($name, [string]$Headers[$name])
         }
 
-        $callbackRunspace = [System.Management.Automation.Runspaces.Runspace]::DefaultRunspace
-        $progressCallback = [Action[Int64, Int64]]{
-            param([Int64]$uploaded, [Int64]$total)
-            if ($null -eq [System.Management.Automation.Runspaces.Runspace]::DefaultRunspace) {
-                [System.Management.Automation.Runspaces.Runspace]::DefaultRunspace = $callbackRunspace
-            }
-            $now = Get-Date
-            if (($now - $script:lastDraw).TotalMilliseconds -ge 250 -or $uploaded -eq $total) {
-                $percent = if ($total -gt 0) { ($uploaded / $total) * 100 } else { 100 }
-                $elapsed = [Math]::Max(0.1, ($now - $started).TotalSeconds)
-                $speed = ($uploaded / 1MB) / $elapsed
-                $remainingMb = [Math]::Max(0, ($total - $uploaded) / 1MB)
-                $etaText = if ($speed -gt 0.01) {
-                    $etaSeconds = [int]($remainingMb / $speed)
-                    $eta = [TimeSpan]::FromSeconds($etaSeconds)
-                    if ($eta.TotalHours -ge 1) { "{0:D2}:{1:mm}:{1:ss}" -f [int]$eta.TotalHours, $eta }
-                    else { "{0:mm}:{0:ss}" -f $eta }
-                } else { "--:--" }
-                $line = "{0,6:N2}%  {1:N1}/{2:N1} MB  {3:N1} MB/s  ETA {4}" -f $percent, ($uploaded / 1MB), ($total / 1MB), $speed, $etaText
-                Write-Host "`r$line" -NoNewline -ForegroundColor Cyan
-                $script:lastDraw = $now
-            }
-        }
-
-        $script:lastDraw = $lastDraw
-        $content = [NyxNova.ProgressableStreamContent]::new($stream, 1048576, $progressCallback)
+        $content = [NyxNova.ProgressableStreamContent]::new($stream, 1048576, $null)
         $content.Headers.ContentType = [Net.Http.Headers.MediaTypeHeaderValue]::Parse("application/octet-stream")
 
         $response = $client.PostAsync($Url, $content).GetAwaiter().GetResult()
@@ -277,11 +261,11 @@ foreach ($file in $assetsToUpload) {
     }
 
     $sizeMb = [Math]::Round($file.Length / 1MB, 1)
-    $uploadUrl = "https://uploads.github.com/repos/$Owner/$Repo/releases/$($release.id)/assets?name=$([Uri]::EscapeDataString($file.Name))"
+    $uploadUrl = "https://uploads.github.com/repos/$Owner/$Repo/releases/$($release.id)/assets" + "?name=$([Uri]::EscapeDataString($file.Name))"
 
     Write-Host ""
     Write-Host "Upload startet: $($file.Name) ($sizeMb MB)" -ForegroundColor Cyan
-    Write-Host "Fortschritt wird live im Terminal angezeigt." -ForegroundColor DarkGray
+    Write-Host "Upload laeuft. Bei grossen Dateien kann das einige Minuten dauern." -ForegroundColor DarkGray
     Write-Host ""
     Send-FileWithProgress -Url $uploadUrl -Path $file.FullName -Headers $headers
 }

@@ -2,10 +2,13 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Globalization;
+using System.Net;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -14,7 +17,9 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
 using CefSharp;
+using CefSharp.DevTools.Page;
 using Microsoft.Win32;
 using Velopack;
 using Velopack.Sources;
@@ -47,7 +52,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DownloadService _downloadService = new();
     private readonly SettingsService _settingsService = new();
     private readonly AddonService _addonService = new();
+    private readonly TelegramBotService _telegramBotService = new();
     private readonly JsonStore<SessionState> _sessionStore = new("sessions.json");
+    private readonly Dictionary<BrowserTab, DateTimeOffset> _tabLastActiveAt = new();
+    private readonly Dictionary<BrowserTab, string> _snoozedTabUrls = new();
+    private readonly System.Windows.Threading.DispatcherTimer _ecoTimer = new()
+    {
+        Interval = TimeSpan.FromMinutes(1)
+    };
     private BrowserTab? _activeTab;
     private AddonItem? _selectedAddon;
     private AddonItem? _activeDetailAddon;
@@ -86,6 +98,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool? _lastGoogleSignedIn;
     private string? _lastGoogleAuthProbeUrl;
     private bool _windowStateTransitioning;
+    private TelegramBotSnapshot? _lastTelegramBotSnapshot;
+    private byte[]? _lastTelegramBotScreenshot;
 
     public MainWindow() : this(false)
     {
@@ -98,6 +112,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SourceInitialized += (_, _) => ApplyRoundedCorners();
         DataContext = this;
         LoadServices();
+        ConfigureLocalOnlyFeatures();
+        NovaThemeService.Apply(_settingsService.Current.Theme, Resources);
+        UpdateThemeCardStatus(_settingsService.Current.Theme);
         Downloads.CollectionChanged += Downloads_CollectionChanged;
         foreach (var item in Downloads.OfType<INotifyPropertyChanged>())
         {
@@ -113,6 +130,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             CreateTab(App.StartupUrl, true);
         }
+        else if (!_settingsService.Current.SmartSessionRestoreEnabled)
+        {
+            CreateTab(AddressParser.HomeUrl, true);
+        }
         else
         {
             RestoreSession();
@@ -121,6 +142,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         MenuPanel.ZoomText = $"{Math.Round(100 * Math.Pow(1.2, _settingsService.Current.ZoomLevel))} %";
         UpdateWindowChromeState();
         _updateTimer.Tick += UpdateTimer_Tick;
+        _ecoTimer.Tick += EcoTimer_Tick;
+        _ecoTimer.Start();
         _googleAuthTimer.Tick += GoogleAuthTimer_Tick;
         _googleAuthTimer.Start();
         ShowBetaUpdateNotice();
@@ -133,6 +156,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public ObservableCollection<AddonItem> StoreAddons => _addonService.Catalog;
     public ObservableCollection<AddonItem> InstalledAddons => _addonService.Installed;
     public ObservableCollection<OmniboxSuggestion> OmniboxSuggestions { get; } = new();
+    public ObservableCollection<TelegramBotChange> TelegramBotChanges { get; } = new();
     public IEnumerable<AddonItem> PinnedExtensions => _addonService.Pinned.ToList();
     public IEnumerable<HistoryItem> RecentHistory => History.Take(5).ToList();
     public IEnumerable<NovaDownloadItem> RecentDownloads => Downloads.Take(5).ToList();
@@ -172,9 +196,48 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SearchEngineBox.SelectedIndex = (int)_settingsService.Current.SearchEngine;
         SettingsSearchEngineBox.SelectedIndex = (int)_settingsService.Current.SearchEngine;
         BookmarkBarCheckBox.IsChecked = _settingsService.Current.ShowBookmarkBar;
+        TrackerBlockerCheckBox.IsChecked = _settingsService.Current.TrackerBlockerEnabled;
+        AggressiveTrackerBlockerCheckBox.IsChecked = _settingsService.Current.AggressiveTrackerBlockerEnabled;
+        HttpsOnlyModeCheckBox.IsChecked = _settingsService.Current.HttpsOnlyModeEnabled;
+        TabSleepCheckBox.IsChecked = _settingsService.Current.TabSleepEnabled;
+        HardwareAccelerationCheckBox.IsChecked = _settingsService.Current.HardwareAccelerationEnabled;
+        EcoModeCheckBox.IsChecked = _settingsService.Current.EcoModeEnabled;
+        SmartSessionRestoreCheckBox.IsChecked = _settingsService.Current.SmartSessionRestoreEnabled;
+        GlobalFingerprintingCheckBox.IsChecked = _settingsService.Current.GlobalFingerprintingProtectionEnabled;
+        AutomaticProtectionCheckBox.IsChecked = _settingsService.Current.AutomaticProtectionEnabled;
+        DarkModeEnforcerCheckBox.IsChecked = _settingsService.Current.DarkModeEnforcerEnabled;
+        LazyMediaLoadingCheckBox.IsChecked = _settingsService.Current.LazyMediaLoadingEnabled;
+        TelegramBotChatIdBox.Text = _settingsService.Current.TelegramBotChatId;
+        TelegramBotEnabledCheckBox.IsChecked = _settingsService.Current.TelegramBotEnabled;
+        TelegramBotStatusText.Text = _telegramBotService.HasStoredToken
+            ? "Token lokal verschluesselt gespeichert."
+            : "Noch kein Bot Token gespeichert.";
         UpdateBookmarkBarVisibility();
         UpdateBuildInfo();
         NotifyCollectionViews();
+    }
+
+    private void ConfigureLocalOnlyFeatures()
+    {
+        if (IsPackagedInstall())
+        {
+            TelegramBotButton.Visibility = Visibility.Collapsed;
+            TelegramBotPanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private static bool IsPackagedInstall()
+    {
+        try
+        {
+            var exePath = Environment.ProcessPath;
+            var appRoot = string.IsNullOrWhiteSpace(exePath) ? null : System.IO.Path.GetDirectoryName(exePath);
+            return !string.IsNullOrWhiteSpace(appRoot) && System.IO.File.Exists(System.IO.Path.Combine(appRoot, "Update.exe"));
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private void UpdateBuildInfo()
@@ -336,13 +399,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private BrowserTab CreateTab(string rawUrl, bool select)
     {
-        var url = AddressParser.Normalize(rawUrl, _settingsService.Current.SearchEngine);
+        var url = ApplyNavigationSettings(AddressParser.Normalize(rawUrl, _settingsService.Current.SearchEngine));
         var tab = new BrowserTab(null, url)
         {
             Title = GetInternalTitle(url)
         };
 
         Tabs.Add(tab);
+        _tabLastActiveAt[tab] = DateTimeOffset.UtcNow;
         if (select)
         {
             SelectTab(tab);
@@ -378,8 +442,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             RequestHandler = new NovaVideoCompatibilityRequestHandler(
                 message => RunOnUi(() => StatusText.Text = message, "request-status"),
                 IsProtectionDisabledForUrl,
+                () => _settingsService.Current.HttpsOnlyModeEnabled,
                 RecordDiagnostic,
-                HandleAuthCallback),
+                HandleAuthCallback,
+                ShowCrashErrorPage),
             PermissionHandler = new NovaPermissionHandler(Dispatcher, RecordDiagnostic, ShowBrowserPermissionPrompt),
             MenuHandler = new NovaContextMenuHandler(message => RunOnUi(() => StatusText.Text = message, "context-menu-status")),
             JsDialogHandler = new NovaJsDialogHandler(message => RunOnUi(() => StatusText.Text = message, "js-dialog-status")),
@@ -543,7 +609,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     _historyService.Record(tab.Title, tab.Url);
                     NotifyCollectionViews();
                     UpdateBookmarkButton();
-                    ShowTrackerToast(GetTrackerCountHint(tab.Url));
+                    if (_settingsService.Current.TrackerBlockerEnabled)
+                    {
+                        ShowTrackerToast(GetTrackerCountHint(tab.Url));
+                    }
                     QueueGoogleAuthCheck(tab.Url, forceToast: true);
                 }
             }, "browser-loading-state");
@@ -564,6 +633,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 RecordDiagnostic(new BrowserDiagnosticEvent("load-error", failingUrl, $"{errorCode}: {errorText}", Failed: true));
                 StatusText.Text = $"Ladefehler: {errorCode}";
                 ShowSlowLoadBar(failingUrl, $"Diese Seite konnte nicht vollstaendig geladen werden: {errorCode}. Du kannst neu laden oder ohne Schutz laden.");
+                ShowBrowserErrorPage(tab, browser, "Seite konnte nicht geladen werden", failingUrl, $"{errorCode}: {errorText}");
                 WriteBrowserDiagnostic("load-error", failingUrl, $"{errorCode}: {errorText}");
             }, "browser-load-error");
         };
@@ -582,26 +652,38 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
-            if (isMainFrame && IsGoogleHost(frameUrl))
+            try
             {
-                await CheckGoogleBlockedPage(args.Frame);
-                QueueGoogleAuthCheck(frameUrl, forceToast: true);
-            }
+                if (isMainFrame && IsGoogleHost(frameUrl))
+                {
+                    await CheckGoogleBlockedPage(args.Frame);
+                    QueueGoogleAuthCheck(frameUrl, forceToast: true);
+                }
 
-            if (isMainFrame && NovaVideoCompatibilityRequestHandler.IsLikelyVideoPage(frameUrl))
-            {
-                await InstallMediaErrorMonitorAsync(args.Frame, frameUrl);
-                await CheckVideoCodecSupport(args.Frame, frameUrl);
-            }
+                if (isMainFrame)
+                {
+                    await ApplyPageFeatureScriptsAsync(args.Frame, frameUrl);
+                }
 
-            if (isMainFrame && NovaVideoCompatibilityRequestHandler.NeedsCompatibilityMode(frameUrl))
-            {
-                _ = TryApplyWebmFallbackAsync(browser, tab);
-            }
+                if (isMainFrame && NovaVideoCompatibilityRequestHandler.IsLikelyVideoPage(frameUrl))
+                {
+                    await InstallMediaErrorMonitorAsync(args.Frame, frameUrl);
+                    await CheckVideoCodecSupport(args.Frame, frameUrl);
+                }
 
-            if (isMainFrame && NovaVideoCompatibilityRequestHandler.NeedsCompatibilityMode(frameUrl))
+                if (isMainFrame && NovaVideoCompatibilityRequestHandler.NeedsCompatibilityMode(frameUrl))
+                {
+                    _ = TryApplyWebmFallbackAsync(browser, tab);
+                }
+
+                if (isMainFrame && NovaVideoCompatibilityRequestHandler.NeedsCompatibilityMode(frameUrl))
+                {
+                    await CheckTargetVideoDomainState(args.Frame, frameUrl);
+                }
+            }
+            catch (ObjectDisposedException)
             {
-                await CheckTargetVideoDomainState(args.Frame, frameUrl);
+                // Frame/Browser wurde waehrend der Nachbearbeitung verworfen (Navigation, Tab-Wechsel, Schliessen). Kein Absturzgrund.
             }
         };
 
@@ -619,6 +701,72 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                message.Contains("h264", StringComparison.OrdinalIgnoreCase) ||
                message.Contains("aac", StringComparison.OrdinalIgnoreCase) ||
                message.Contains("mse", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task ApplyPageFeatureScriptsAsync(IFrame frame, string frameUrl)
+    {
+        if (!AddressParser.IsWebUrl(frameUrl))
+        {
+            return;
+        }
+
+        try
+        {
+        if (_settingsService.Current.DarkModeEnforcerEnabled)
+        {
+            const string darkModeScript = """
+                (() => {
+                  if (document.getElementById("nova-dark-mode-enforcer")) return;
+                  const style = document.createElement("style");
+                  style.id = "nova-dark-mode-enforcer";
+                  style.textContent = `
+                    html { color-scheme: dark !important; background: #08060d !important; }
+                    body { background: #08060d !important; color: #f4ecff !important; }
+                    input, textarea, select, button { color-scheme: dark !important; }
+                    img, video, canvas, iframe, svg { filter: none !important; }
+                  `;
+                  document.documentElement.appendChild(style);
+                })();
+                """;
+
+            await frame.EvaluateScriptAsync(darkModeScript);
+        }
+
+        if (_settingsService.Current.LazyMediaLoadingEnabled)
+        {
+            const string lazyMediaScript = """
+                (() => {
+                  const apply = root => {
+                    root.querySelectorAll?.("img, iframe").forEach(el => {
+                      if (!el.hasAttribute("loading")) el.setAttribute("loading", "lazy");
+                      if (el.tagName === "IMG") el.decoding = "async";
+                    });
+                  };
+
+                  apply(document);
+
+                  if (window.__novaLazyMediaObserver) return;
+                  window.__novaLazyMediaObserver = new MutationObserver(records => {
+                    for (const record of records) {
+                      for (const node of record.addedNodes) {
+                        if (node.nodeType === 1) apply(node);
+                      }
+                    }
+                  });
+                  window.__novaLazyMediaObserver.observe(document.documentElement, {
+                    childList: true,
+                    subtree: true
+                  });
+                })();
+                """;
+
+            await frame.EvaluateScriptAsync(lazyMediaScript);
+        }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Frame wurde beim Wegnavigieren/Tab-Wechsel verworfen, bevor die Skripte liefen. Harmlos.
+        }
     }
 
     private static bool IsFatalMediaConsoleMessage(string message)
@@ -1591,6 +1739,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _activeTab = tab;
+        MarkTabActive(tab);
+        WakeSnoozedTab(tab);
         CloseTransientPanels();
 
         if (IsStartTab(tab.Url))
@@ -1627,9 +1777,41 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         UpdateExtensionAccessState();
     }
 
+    private void SelectRelativeTab(int delta)
+    {
+        if (Tabs.Count == 0)
+        {
+            return;
+        }
+
+        var currentIndex = _activeTab is null ? 0 : Math.Max(0, Tabs.IndexOf(_activeTab));
+        var nextIndex = (currentIndex + delta + Tabs.Count) % Tabs.Count;
+        SelectTab(Tabs[nextIndex]);
+    }
+
+    private void SelectTabByShortcutIndex(int shortcutIndex)
+    {
+        if (Tabs.Count == 0)
+        {
+            return;
+        }
+
+        var index = shortcutIndex == 9
+            ? Tabs.Count - 1
+            : Math.Clamp(shortcutIndex - 1, 0, Tabs.Count - 1);
+
+        SelectTab(Tabs[index]);
+    }
+
+    private void FocusAddressBar()
+    {
+        AddressBox.Focus();
+        AddressBox.SelectAll();
+    }
+
     private void NavigateActive(string input)
     {
-        var url = AddressParser.Normalize(input, _settingsService.Current.SearchEngine);
+        var url = ApplyNavigationSettings(AddressParser.Normalize(input, _settingsService.Current.SearchEngine));
         CloseTransientPanels();
         CloseOmniboxSuggestions();
         if (_activeTab is null)
@@ -1670,8 +1852,221 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         browser.Load(url);
     }
 
+    private string ApplyNavigationSettings(string url)
+    {
+        if (!_settingsService.Current.HttpsOnlyModeEnabled ||
+            !Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            !string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+        {
+            return url;
+        }
+
+        var builder = new UriBuilder(uri)
+        {
+            Scheme = Uri.UriSchemeHttps,
+            Port = -1
+        };
+
+        return builder.Uri.ToString();
+    }
+
+    private void ShowCrashErrorPage(string? url, string details)
+    {
+        RunOnUi(() =>
+        {
+            if (_activeTab?.Browser is null)
+            {
+                return;
+            }
+
+            ShowBrowserErrorPage(
+                _activeTab,
+                _activeTab.Browser,
+                "Diese Webseite ist abgestuerzt",
+                string.IsNullOrWhiteSpace(url) ? _activeTab.Url : url,
+                details);
+        }, "show-crash-error-page");
+    }
+
+    private void ShowBrowserErrorPage(BrowserTab tab, ChromiumWebBrowser browser, string title, string failedUrl, string details)
+    {
+        if (!ReferenceEquals(tab, _activeTab) || string.IsNullOrWhiteSpace(failedUrl))
+        {
+            return;
+        }
+
+        tab.Url = failedUrl;
+        tab.Title = "Seitenfehler";
+        AddressBox.Text = failedUrl;
+        SetLoadingAnimation(false);
+
+        var html = BuildNovaErrorPage(title, failedUrl, details);
+        browser.Load("data:text/html;charset=utf-8," + Uri.EscapeDataString(html));
+    }
+
+    private static string BuildNovaErrorPage(string title, string url, string details)
+    {
+        var safeTitle = WebUtility.HtmlEncode(title);
+        var safeUrl = WebUtility.HtmlEncode(url);
+        var safeDetails = WebUtility.HtmlEncode(details);
+        return $$"""
+            <!doctype html>
+            <html lang="de">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width,initial-scale=1">
+              <title>{{safeTitle}}</title>
+              <style>
+                :root { color-scheme: dark; }
+                * { box-sizing: border-box; }
+                body {
+                  margin: 0;
+                  min-height: 100vh;
+                  display: grid;
+                  place-items: center;
+                  font-family: "Segoe UI", system-ui, sans-serif;
+                  background:
+                    radial-gradient(circle at 72% 18%, rgba(148, 59, 255, .30), transparent 38%),
+                    radial-gradient(circle at 15% 80%, rgba(255, 47, 143, .18), transparent 34%),
+                    #07050d;
+                  color: #f6ecff;
+                }
+                .card {
+                  width: min(760px, calc(100vw - 48px));
+                  padding: 34px;
+                  border-radius: 24px;
+                  background: rgba(16, 10, 28, .84);
+                  border: 1px solid rgba(193, 117, 255, .45);
+                  box-shadow: 0 0 50px rgba(154, 72, 255, .22), inset 0 1px 0 rgba(255,255,255,.08);
+                }
+                .icon {
+                  width: 58px;
+                  height: 58px;
+                  border-radius: 18px;
+                  display: grid;
+                  place-items: center;
+                  margin-bottom: 18px;
+                  background: linear-gradient(135deg, #ff2f8f, #8b3cff);
+                  box-shadow: 0 0 28px rgba(187, 80, 255, .46);
+                  font-size: 28px;
+                  font-weight: 900;
+                }
+                h1 { margin: 0 0 10px; font-size: clamp(30px, 5vw, 52px); line-height: 1; letter-spacing: 0; }
+                p { margin: 0 0 18px; color: #cdbce8; font-size: 16px; line-height: 1.6; }
+                code {
+                  display: block;
+                  padding: 14px;
+                  border-radius: 14px;
+                  background: rgba(0,0,0,.35);
+                  border: 1px solid rgba(173, 112, 255, .25);
+                  color: #e7d8ff;
+                  overflow-wrap: anywhere;
+                }
+                .details { margin-top: 12px; font-size: 13px; color: #a98fc7; }
+                .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+                button {
+                  border: 1px solid rgba(210, 140, 255, .42);
+                  background: rgba(45, 20, 78, .85);
+                  color: #fff;
+                  border-radius: 999px;
+                  padding: 12px 18px;
+                  font-weight: 800;
+                  cursor: pointer;
+                }
+                button.primary {
+                  background: linear-gradient(135deg, #ff2f8f, #9b45ff);
+                  box-shadow: 0 0 22px rgba(171, 80, 255, .35);
+                }
+                button:hover { filter: brightness(1.12); }
+              </style>
+            </head>
+            <body>
+              <main class="card">
+                <div class="icon">!</div>
+                <h1>{{safeTitle}}</h1>
+                <p>NyxNova hat den Tab stabil gehalten und den Fehler abgefangen.</p>
+                <code>{{safeUrl}}</code>
+                <p class="details">{{safeDetails}}</p>
+                <div class="actions">
+                  <button class="primary" onclick="location.href='{{safeUrl}}'">Neu laden</button>
+                  <button onclick="history.back()">Zurueck</button>
+                  <button onclick="location.href='nova://start'">Startseite</button>
+                  <button onclick="location.href='nova://diagnostics'">Diagnose oeffnen</button>
+                </div>
+              </main>
+            </body>
+            </html>
+            """;
+    }
+
+    private void MarkTabActive(BrowserTab tab)
+    {
+        _tabLastActiveAt[tab] = DateTimeOffset.UtcNow;
+    }
+
+    private void WakeSnoozedTab(BrowserTab tab)
+    {
+        if (!_snoozedTabUrls.Remove(tab, out var url))
+        {
+            return;
+        }
+
+        tab.Url = url;
+        if (tab.Browser is not null && !tab.Browser.IsDisposed)
+        {
+            tab.Browser.Load(url);
+        }
+    }
+
+    private void EcoTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_settingsService.Current.EcoModeEnabled || !_settingsService.Current.TabSleepEnabled)
+        {
+            return;
+        }
+
+        var cutoff = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10);
+        foreach (var tab in Tabs.ToList())
+        {
+            if (ReferenceEquals(tab, _activeTab) ||
+                _snoozedTabUrls.ContainsKey(tab) ||
+                !AddressParser.IsWebUrl(tab.Url) ||
+                tab.Browser is null ||
+                tab.Browser.IsDisposed ||
+                tab.Browser.IsLoading)
+            {
+                continue;
+            }
+
+            var lastActive = _tabLastActiveAt.TryGetValue(tab, out var value)
+                ? value
+                : DateTimeOffset.UtcNow;
+
+            if (lastActive > cutoff)
+            {
+                continue;
+            }
+
+            _snoozedTabUrls[tab] = tab.Url;
+            tab.Browser.Load(DarkBlankPage);
+            RecordDiagnostic(new BrowserDiagnosticEvent("eco-tab-snooze", tab.Url, "Inactive background tab unloaded by Eco Mode."));
+        }
+    }
+
     [DllImport("dwmapi.dll", PreserveSig = true)]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetWindowRect(IntPtr hwnd, out WindowRect rect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
 
     private const int DwmwaWindowCornerPreference = 33;
     private const int DwmwcpRound = 2;
@@ -1852,6 +2247,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 break;
             case "nova://settings":
                 SettingsPage.Visibility = Visibility.Visible;
+                ShowSettingsCategory("design");
+                break;
+            case var settings when settings.StartsWith("nova://settings/", StringComparison.OrdinalIgnoreCase):
+                SettingsPage.Visibility = Visibility.Visible;
+                ShowSettingsCategory(settings["nova://settings/".Length..]);
                 break;
             case "nova://update":
                 UpdatePage.Visibility = Visibility.Visible;
@@ -2161,6 +2561,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             "nova://diagnostics" => "Diagnostics",
             "nova://media-diagnostics" => "Media Diagnostics",
             "nova://settings" => "Settings",
+            var settings when settings.StartsWith("nova://settings/", StringComparison.OrdinalIgnoreCase) => "Settings",
             "nova://update" => "Beta Update",
             "nova://extensions" => "Extensions",
             "nova://mods" => "NX Mods",
@@ -2860,6 +3261,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         Tabs.Remove(tab);
+        _tabLastActiveAt.Remove(tab);
+        _snoozedTabUrls.Remove(tab);
         SafeDisposeBrowser(tab, "close-tab");
     }
 
@@ -3362,6 +3765,552 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void TelegramBot_Click(object sender, RoutedEventArgs e)
+    {
+        CloseTransientPanels(TelegramBotPanel);
+        if (TelegramBotPanel.Visibility == Visibility.Visible)
+        {
+            AnimateTelegramBotPanel(show: false);
+        }
+        else
+        {
+            AnimateTelegramBotPanel(show: true);
+        }
+
+        TelegramBotStatusText.Text = _telegramBotService.HasStoredToken
+            ? "Token lokal verschluesselt gespeichert."
+            : "Bot Token eintragen, Chat ID setzen und speichern.";
+    }
+
+    private void TelegramBotChangeTypeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        var type = GetTelegramBotChangeType();
+        TelegramBotStatusText.Text = $"Art der Aenderung: {type}.";
+    }
+
+    private string GetTelegramBotChangeType()
+    {
+        return (TelegramBotChangeTypeBox?.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Sonstiges";
+    }
+
+    private string GetTelegramBotMode()
+    {
+        // Fallback bewusst "Browser-Screenshot" (navigiert NICHT weg), nicht "Startseite":
+        // sonst wuerde eine leere Auswahl den aktiven Tab ungewollt auf nova://start schicken.
+        return (TelegramBotModeBox?.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Browser-Screenshot";
+    }
+
+    private void CloseTelegramBotPanel_Click(object sender, RoutedEventArgs e)
+    {
+        AnimateTelegramBotPanel(show: false);
+    }
+
+    private void AnimateTelegramBotPanel(bool show)
+    {
+        const int durationMs = 220;
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        if (show)
+        {
+            TelegramBotPanel.Visibility = Visibility.Visible;
+        }
+
+        var opacity = new DoubleAnimation
+        {
+            To = show ? 1 : 0,
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            EasingFunction = ease
+        };
+        var slide = new DoubleAnimation
+        {
+            To = show ? 0 : -28,
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            EasingFunction = ease
+        };
+
+        if (!show)
+        {
+            opacity.Completed += (_, _) =>
+            {
+                if (TelegramBotPanel.Opacity <= 0.02)
+                {
+                    TelegramBotPanel.Visibility = Visibility.Collapsed;
+                }
+            };
+        }
+
+        TelegramBotPanel.BeginAnimation(OpacityProperty, opacity);
+        TelegramBotPanelTransform.BeginAnimation(TranslateTransform.XProperty, slide);
+    }
+
+    private void SaveTelegramBotSettings_Click(object sender, RoutedEventArgs e)
+    {
+        SaveTelegramBotSettings();
+        TelegramBotStatusText.Text = "Bot-Einstellungen gespeichert.";
+    }
+
+    private void TelegramBotMessageBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (TelegramBotMessageBox.Text == "Schreibe hier, was geaendert wurde...")
+        {
+            TelegramBotMessageBox.Clear();
+        }
+    }
+
+    private void TelegramBotModeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (TelegramBotModeBox is null || TelegramBotCredentialPanel is null || TelegramBotModeInfoText is null)
+        {
+            return;
+        }
+
+        var mode = (TelegramBotModeBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
+        TelegramBotCredentialPanel.Visibility = mode == "Telegram Zugang" ? Visibility.Visible : Visibility.Collapsed;
+
+        TelegramBotModeInfoText.Text = mode switch
+        {
+            "Startseite" => "Browser-Screenshot oeffnet zuerst nova://start und nimmt die Startseite auf.",
+            "Toolbar & Adressleiste" => "Browser-Screenshot zeigt Toolbar und Adressleiste so, wie sie gerade aussehen.",
+            "Tabs & Fenster" => "Browser-Screenshot zeigt die aktuelle Tableiste und Fensteranordnung.",
+            "Drei-Punkte-Menue" => "Oeffne das Hauptmenue manuell, dann Browser-Screenshot fuer eine Aufnahme mit offenem Menue.",
+            "Erweiterungen & Addons" => "Browser-Screenshot oeffnet zuerst nova://extensions und nimmt die Addon-Seite auf.",
+            "Downloads" => "Browser-Screenshot oeffnet zuerst nova://downloads und nimmt die Download-Seite auf.",
+            "Verlauf" => "Browser-Screenshot oeffnet zuerst nova://history und nimmt die Verlaufsseite auf.",
+            "Einstellungen" => "Browser-Screenshot oeffnet zuerst nova://settings und nimmt die Einstellungsseite auf.",
+            "Layouts & Design" => "Browser-Screenshot oeffnet die Design-Bereiche in nova://settings.",
+            "Media & Webseiten" => "Browser-Screenshot oeffnet zuerst nova://media-diagnostics und nimmt die Media-Diagnose auf.",
+            "Ersteller & Rollen" => "Zeigt die Namen und Rollen des NyxNova-Projekts.",
+            "Telegram Zugang" => "Nur hier werden Token und Channel-Ziel angezeigt oder geaendert.",
+            _ => "Bereich auswaehlen, dann Browser-Screenshot fuer eine Aufnahme dieses Bereichs."
+        };
+
+        if (mode == "Ersteller & Rollen")
+        {
+            ShowTelegramCreatorRoles();
+        }
+    }
+
+    private static string? GetTelegramBotModeTargetPage(string mode) => mode switch
+    {
+        "Erweiterungen & Addons" => "nova://extensions",
+        "Downloads" => "nova://downloads",
+        "Verlauf" => "nova://history",
+        "Einstellungen" => "nova://settings",
+        "Startseite" => "nova://start",
+        "Layouts & Design" => "nova://settings",
+        "Media & Webseiten" => "nova://media-diagnostics",
+        _ => null
+    };
+
+    private void ShowTelegramCreatorRoles()
+    {
+        TelegramBotChanges.Clear();
+        TelegramBotChanges.Add(new TelegramBotChange
+        {
+            Title = "Dennis",
+            Detail = "Projektinhaber, Design-Entscheidungen, Tests und Release-Freigabe.",
+            TargetUrl = AddressParser.HomeUrl,
+            Icon = "\uE77B"
+        });
+        TelegramBotChanges.Add(new TelegramBotChange
+        {
+            Title = "NyxNova Team",
+            Detail = "Browser-Design, Funktionen, Addons, Installer und Update-System.",
+            TargetUrl = AddressParser.HomeUrl,
+            Icon = "\uE902"
+        });
+        TelegramBotChanges.Add(new TelegramBotChange
+        {
+            Title = "Community Tester",
+            Detail = "Feedback, Fehlerberichte und Beta-Tests fuer neue Versionen.",
+            TargetUrl = AddressParser.HomeUrl,
+            Icon = "\uE716"
+        });
+
+        TelegramBotSummaryText.Text = "Ersteller und Rollen sind geladen. Du kannst sie mit deinem Update-Text mitsenden.";
+        TelegramBotStatusText.Text = "Ersteller/Rollen angezeigt.";
+    }
+
+    private async void TelegramBotAnalyze_Click(object sender, RoutedEventArgs e)
+    {
+        await AnalyzeCurrentPageForTelegramAsync(saveSnapshot: true);
+    }
+
+    private async void TelegramBotCaptureBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var mode = GetTelegramBotMode();
+            var changeType = GetTelegramBotChangeType();
+            var targetPage = GetTelegramBotModeTargetPage(mode);
+
+            // Merken, wo der Nutzer gerade war, damit wir nach der Aufnahme zurueckkehren
+            // und ihn nicht auf der Zielseite (z. B. nova://start) stehen lassen.
+            var previousUrl = _activeTab?.Url;
+
+            if (!string.IsNullOrWhiteSpace(targetPage))
+            {
+                TelegramBotStatusText.Text = $"Oeffne {mode} ...";
+                NavigateActive(targetPage);
+                await Task.Delay(360);
+            }
+
+            TelegramBotStatusText.Text = "Browser-Screenshot wird erstellt ...";
+            _lastTelegramBotScreenshot = await CaptureActiveViewPngAsync();
+
+            _lastTelegramBotSnapshot = CreateLocalTelegramSnapshot($"NyxNova: {mode}", targetPage ?? "");
+            SetTelegramBotLocalChange(mode, $"Art: {changeType}");
+
+            // Zuruecknavigieren, falls wir fuer den Screenshot die Seite gewechselt haben.
+            if (!string.IsNullOrWhiteSpace(targetPage) &&
+                !string.IsNullOrWhiteSpace(previousUrl) &&
+                !string.Equals(previousUrl, targetPage, StringComparison.OrdinalIgnoreCase))
+            {
+                NavigateActive(previousUrl);
+            }
+
+            TelegramBotStatusText.Text = "Screenshot ist bereit. Du kannst ihn jetzt senden.";
+        }
+        catch (Exception ex)
+        {
+            TelegramBotStatusText.Text = $"Screenshot fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    private void TelegramBotPickImage_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "Screenshot oder Bild fuer Telegram auswaehlen",
+                Filter = "Bilder (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|Alle Dateien (*.*)|*.*",
+                CheckFileExists = true
+            };
+
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            var mode = GetTelegramBotMode();
+            var changeType = GetTelegramBotChangeType();
+            _lastTelegramBotScreenshot = System.IO.File.ReadAllBytes(dialog.FileName);
+            _lastTelegramBotSnapshot = CreateLocalTelegramSnapshot($"NyxNova: {mode}", GetTelegramBotModeTargetPage(mode) ?? "");
+            SetTelegramBotLocalChange(mode, $"Art: {changeType}");
+            TelegramBotStatusText.Text = "Bild ist bereit. Du kannst es jetzt senden.";
+        }
+        catch (Exception ex)
+        {
+            TelegramBotStatusText.Text = $"Bildauswahl fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    private async void TelegramBotSend_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SaveTelegramBotSettings();
+
+            if (_lastTelegramBotSnapshot is null || _lastTelegramBotScreenshot is null)
+            {
+                TelegramBotStatusText.Text = "Kein Screenshot vorhanden. Lokaler Browser-Screenshot wird erstellt ...";
+                _lastTelegramBotScreenshot = await CaptureBrowserWindowPngAsync();
+                _lastTelegramBotSnapshot = CreateLocalTelegramSnapshot("NyxNova Update", "local://nyxnova/update");
+                if (TelegramBotChanges.Count == 0)
+                {
+                    SetTelegramBotLocalChange("NyxNova Update", "Manueller Update-Text wurde vorbereitet.");
+                }
+            }
+
+            var token = string.IsNullOrWhiteSpace(TelegramBotTokenBox.Password)
+                ? _telegramBotService.LoadToken()
+                : TelegramBotTokenBox.Password;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                TelegramBotStatusText.Text = "Telegram Bot Token fehlt.";
+                return;
+            }
+
+            var caption = BuildTelegramCaptionHtml();
+            TelegramBotStatusText.Text = "Telegram Update wird gesendet ...";
+            await _telegramBotService.SendPhotoAsync(token, TelegramBotChatIdBox.Text, _lastTelegramBotScreenshot, caption, "HTML");
+            TelegramBotStatusText.Text = "Update wurde an Telegram gesendet.";
+        }
+        catch (Exception ex)
+        {
+            TelegramBotStatusText.Text = BuildTelegramErrorText(ex);
+        }
+    }
+
+    private void TelegramBotChange_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (TelegramBotChangeListBox.SelectedItem is TelegramBotChange change &&
+            !string.IsNullOrWhiteSpace(change.TargetUrl))
+        {
+            TelegramBotPanel.Visibility = Visibility.Collapsed;
+            NavigateActive(change.TargetUrl);
+        }
+    }
+
+    private void SaveTelegramBotSettings()
+    {
+        _settingsService.Current.TelegramBotChatId = TelegramBotChatIdBox.Text.Trim();
+        _settingsService.Current.TelegramBotEnabled = TelegramBotEnabledCheckBox.IsChecked == true;
+        _settingsService.Save();
+
+        if (!string.IsNullOrWhiteSpace(TelegramBotTokenBox.Password))
+        {
+            if (TelegramBotRememberTokenCheckBox.IsChecked == true)
+            {
+                _telegramBotService.SaveToken(TelegramBotTokenBox.Password);
+                TelegramBotTokenBox.Clear();
+            }
+            else
+            {
+                _telegramBotService.DeleteToken();
+            }
+        }
+    }
+
+    private async Task AnalyzeCurrentPageForTelegramAsync(bool saveSnapshot)
+    {
+        try
+        {
+            if (_activeTab?.Browser is not { } browser || !AddressParser.IsWebUrl(_activeTab.Url))
+            {
+                TelegramBotStatusText.Text = "Telegram Bot kann nur echte Webseiten pruefen.";
+                return;
+            }
+
+            TelegramBotStatusText.Text = "Webseite wird gelesen und Screenshot wird erstellt ...";
+            var snapshot = await CaptureTelegramSnapshotAsync(browser);
+            var previous = _telegramBotService.GetSnapshot(snapshot.Url);
+            var changes = _telegramBotService.Analyze(previous, snapshot);
+
+            TelegramBotChanges.Clear();
+            foreach (var change in changes)
+            {
+                TelegramBotChanges.Add(change);
+            }
+
+            _lastTelegramBotSnapshot = snapshot;
+            _lastTelegramBotScreenshot = await browser.CaptureScreenshotAsync(CaptureScreenshotFormat.Png);
+
+            if (saveSnapshot)
+            {
+                _telegramBotService.SaveSnapshot(snapshot);
+            }
+
+            TelegramBotSummaryText.Text = BuildTelegramCaption();
+            TelegramBotStatusText.Text = "Analyse fertig. Eintrag doppelklicken, um die Seite zu oeffnen.";
+        }
+        catch (Exception ex)
+        {
+            TelegramBotStatusText.Text = $"Analyse fehlgeschlagen: {ex.Message}";
+        }
+    }
+
+    // Nimmt bevorzugt die offene Webseite direkt per CEF auf (zuverlaessig, unabhaengig
+    // davon ob das Fenster im Vordergrund ist). Nur bei internen Nova-Seiten (WPF) oder
+    // fehlendem Browser wird der Fensterbereich abfotografiert.
+    private async Task<byte[]> CaptureActiveViewPngAsync()
+    {
+        if (_activeTab?.Browser is { } browser && AddressParser.IsWebUrl(_activeTab.Url))
+        {
+            return await browser.CaptureScreenshotAsync(CaptureScreenshotFormat.Png);
+        }
+
+        return await CaptureBrowserWindowPngAsync();
+    }
+
+    private async Task<byte[]> CaptureBrowserWindowPngAsync()
+    {
+        var wasVisible = TelegramBotPanel.Visibility == Visibility.Visible;
+        TelegramBotPanel.BeginAnimation(OpacityProperty, null);
+        TelegramBotPanelTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        TelegramBotPanel.Visibility = Visibility.Collapsed;
+        TelegramBotPanel.Opacity = 0;
+        TelegramBotPanelTransform.X = -28;
+
+        // Fenster nach vorne holen, damit die Bildschirmkopie die echten Inhalte und
+        // nicht ein verdeckendes Fenster erwischt.
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+        Activate();
+
+        await Dispatcher.InvokeAsync(UpdateLayout);
+        await Task.Delay(180);
+
+        try
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd == IntPtr.Zero || !GetWindowRect(hwnd, out var rect))
+            {
+                throw new InvalidOperationException("Fensterbereich konnte nicht ermittelt werden.");
+            }
+
+            var width = Math.Max(1, rect.Right - rect.Left);
+            var height = Math.Max(1, rect.Bottom - rect.Top);
+            using var bitmap = new System.Drawing.Bitmap(width, height);
+            using (var graphics = System.Drawing.Graphics.FromImage(bitmap))
+            {
+                graphics.CopyFromScreen(rect.Left, rect.Top, 0, 0, new System.Drawing.Size(width, height));
+            }
+
+            using var stream = new MemoryStream();
+            bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+            return stream.ToArray();
+        }
+        finally
+        {
+            TelegramBotPanel.Visibility = wasVisible ? Visibility.Visible : Visibility.Collapsed;
+            TelegramBotPanel.Opacity = wasVisible ? 1 : 0;
+            TelegramBotPanelTransform.X = wasVisible ? 0 : -28;
+        }
+    }
+
+    private static string BuildTelegramErrorText(Exception ex)
+    {
+        var message = ex.Message;
+        if (message.Contains("chat not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Telegram Fehler: Chat/Channel nicht gefunden. Fuer Channels: Bot als Admin hinzufuegen und @channelname oder die -100... Channel-ID eintragen.";
+        }
+
+        if (message.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("401", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Telegram Fehler: Bot Token ist ungueltig.";
+        }
+
+        if (message.Contains("Bad Request", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("400", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Telegram Fehler: Telegram lehnt die Anfrage ab. Pruefe Bot Token und Chat ID.";
+        }
+
+        return $"Telegram Fehler: {message}";
+    }
+
+    private static TelegramBotSnapshot CreateLocalTelegramSnapshot(string title, string source)
+    {
+        return new TelegramBotSnapshot
+        {
+            Url = source,
+            Title = title,
+            Text = $"Lokaler NyxNova Screenshot: {title}",
+            TextHash = TelegramBotService.ComputeHash(source + title + DateTime.Now.Ticks),
+            CapturedAt = DateTime.Now
+        };
+    }
+
+    private void SetTelegramBotLocalChange(string title, string detail)
+    {
+        TelegramBotChanges.Clear();
+        TelegramBotChanges.Add(new TelegramBotChange
+        {
+            Title = title,
+            Detail = detail,
+            TargetUrl = _activeTab?.Url ?? AddressParser.HomeUrl,
+            Icon = "\uE722"
+        });
+
+        TelegramBotSummaryText.Text = BuildTelegramCaption();
+    }
+
+    private string GetTelegramBotUserText()
+    {
+        var text = TelegramBotMessageBox.Text.Trim();
+        return text == "Schreibe hier, was geaendert wurde..." ? "" : text;
+    }
+
+    // Saubere, uebersichtliche Telegram-Nachricht: nur Bereich und Aenderung,
+    // kein Dateiname und kein Dateipfad.
+    private string BuildTelegramCaption()
+    {
+        var lines = new List<string>
+        {
+            "NyxNova Update",
+            "",
+            $"Bereich: {GetTelegramBotMode()}",
+            $"Art: {GetTelegramBotChangeType()}"
+        };
+
+        var text = GetTelegramBotUserText();
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            lines.Add("");
+            lines.Add(text);
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    // HTML-Variante fuer den Versand mit parse_mode=HTML. Dynamische Werte werden
+    // escaped, damit Zeichen wie & oder < (z. B. "Toolbar & Adressleiste") Telegram
+    // nicht den Parser zerlegen.
+    private string BuildTelegramCaptionHtml()
+    {
+        static string Esc(string? value) => System.Net.WebUtility.HtmlEncode(value ?? "");
+
+        var lines = new List<string>
+        {
+            "\U0001F30C <b>NyxNova Update</b>",
+            "",
+            $"\U0001F4E6 <b>Bereich:</b> {Esc(GetTelegramBotMode())}",
+            $"\U0001F527 <b>Art:</b> {Esc(GetTelegramBotChangeType())}"
+        };
+
+        var text = GetTelegramBotUserText();
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            lines.Add("");
+            lines.Add(Esc(text));
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    private static async Task<TelegramBotSnapshot> CaptureTelegramSnapshotAsync(ChromiumWebBrowser browser)
+    {
+        const string script = """
+(() => JSON.stringify({
+  url: location.href,
+  title: document.title || location.href,
+  text: (document.body ? document.body.innerText : '').replace(/\s+/g, ' ').trim().slice(0, 16000),
+  headings: Array.from(document.querySelectorAll('h1,h2,h3')).map(x => x.innerText.trim()).filter(Boolean).slice(0, 40),
+  links: Array.from(document.links).map(a => a.href).filter(Boolean).slice(0, 80)
+}))()
+""";
+
+        var response = await browser.EvaluateScriptAsync(script);
+        if (!response.Success || response.Result is not string json)
+        {
+            throw new InvalidOperationException(response.Message ?? "Seiteninhalt konnte nicht gelesen werden.");
+        }
+
+        var data = JsonSerializer.Deserialize<TelegramProbeData>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            ?? throw new InvalidOperationException("Seitenanalyse konnte nicht ausgewertet werden.");
+
+        return new TelegramBotSnapshot
+        {
+            Url = data.Url ?? "",
+            Title = data.Title ?? "",
+            Text = data.Text ?? "",
+            Headings = data.Headings ?? new List<string>(),
+            Links = data.Links ?? new List<string>(),
+            CapturedAt = DateTime.Now
+        };
+    }
+
     private void Downloads_Click(object sender, RoutedEventArgs e)
     {
         CloseTransientPanels();
@@ -3840,9 +4789,31 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _settingsService.Current.SearchEngine = SearchEngine.Google;
         _settingsService.Current.ShowBookmarkBar = false;
         _settingsService.Current.ZoomLevel = 0;
+        _settingsService.Current.TrackerBlockerEnabled = true;
+        _settingsService.Current.AggressiveTrackerBlockerEnabled = false;
+        _settingsService.Current.HttpsOnlyModeEnabled = false;
+        _settingsService.Current.TabSleepEnabled = true;
+        _settingsService.Current.HardwareAccelerationEnabled = true;
+        _settingsService.Current.EcoModeEnabled = false;
+        _settingsService.Current.SmartSessionRestoreEnabled = true;
+        _settingsService.Current.GlobalFingerprintingProtectionEnabled = true;
+        _settingsService.Current.AutomaticProtectionEnabled = true;
+        _settingsService.Current.DarkModeEnforcerEnabled = false;
+        _settingsService.Current.LazyMediaLoadingEnabled = true;
         SearchEngineBox.SelectedIndex = 0;
         SettingsSearchEngineBox.SelectedIndex = 0;
         BookmarkBarCheckBox.IsChecked = false;
+        TrackerBlockerCheckBox.IsChecked = true;
+        AggressiveTrackerBlockerCheckBox.IsChecked = false;
+        HttpsOnlyModeCheckBox.IsChecked = false;
+        TabSleepCheckBox.IsChecked = true;
+        HardwareAccelerationCheckBox.IsChecked = true;
+        EcoModeCheckBox.IsChecked = false;
+        SmartSessionRestoreCheckBox.IsChecked = true;
+        GlobalFingerprintingCheckBox.IsChecked = true;
+        AutomaticProtectionCheckBox.IsChecked = true;
+        DarkModeEnforcerCheckBox.IsChecked = false;
+        LazyMediaLoadingCheckBox.IsChecked = true;
         UpdateBookmarkBarVisibility();
         _settingsService.Save();
         StatusText.Text = "Einstellungen zurueckgesetzt.";
@@ -3864,12 +4835,123 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         StatusText.Text = "Hilfe: Nova interne Seiten nutzen nova://start, nova://store, nova://extensions, nova://settings.";
     }
 
-    private void SettingsNavDesign_Click(object sender, MouseButtonEventArgs e) => SettingsDesignSection.BringIntoView();
-    private void SettingsNavSearch_Click(object sender, MouseButtonEventArgs e) => SettingsSearchSection.BringIntoView();
-    private void SettingsNavBookmarks_Click(object sender, MouseButtonEventArgs e) => SettingsStartSection.BringIntoView();
-    private void SettingsNavAddons_Click(object sender, MouseButtonEventArgs e) => SettingsAddonsSection.BringIntoView();
-    private void SettingsNavPrivacy_Click(object sender, MouseButtonEventArgs e) => SettingsPrivacySection.BringIntoView();
-    private void SettingsNavBuild_Click(object sender, MouseButtonEventArgs e) => SettingsBuildSection.BringIntoView();
+    private void SettingsNavDesign_Click(object sender, MouseButtonEventArgs e) => NavigateActive("nova://settings/design");
+    private void SettingsNavSearch_Click(object sender, MouseButtonEventArgs e) => NavigateActive("nova://settings/search");
+    private void SettingsNavBookmarks_Click(object sender, MouseButtonEventArgs e) => NavigateActive("nova://settings/bookmarks");
+    private void SettingsNavDownloads_Click(object sender, MouseButtonEventArgs e) => NavigateActive("nova://settings/downloads");
+    private void SettingsNavAddons_Click(object sender, MouseButtonEventArgs e) => NavigateActive("nova://settings/addons");
+    private void SettingsNavPrivacy_Click(object sender, MouseButtonEventArgs e) => NavigateActive("nova://settings/privacy");
+    private void SettingsNavBuild_Click(object sender, MouseButtonEventArgs e) => NavigateActive("nova://settings/build");
+
+    private void ShowSettingsCategory(string category)
+    {
+        if (SettingsDesignSection is null)
+        {
+            return;
+        }
+
+        HideAllSettingsSections();
+        ResetSettingsNavState();
+
+        switch (category)
+        {
+            case "search":
+                SettingsPageTitle.Text = "SUCHE UND ADRESSE";
+                SettingsPageSubtitle.Text = "Suchmaschine, Adressleiste und Eingabe-Verhalten.";
+                SettingsSearchSection.Visibility = Visibility.Visible;
+                SetSettingsNavActive(SettingsNavSearch);
+                SettingsSearchSection.BringIntoView();
+                break;
+            case "bookmarks":
+                SettingsPageTitle.Text = "LESEZEICHEN";
+                SettingsPageSubtitle.Text = "Startseiten-Verhalten und Lesezeichenleiste.";
+                SettingsStartSection.Visibility = Visibility.Visible;
+                SetSettingsNavActive(SettingsNavBookmarks);
+                SettingsStartSection.BringIntoView();
+                break;
+            case "downloads":
+                SettingsPageTitle.Text = "DOWNLOADS";
+                SettingsPageSubtitle.Text = "Download-Ort, Download-Popup und Download-Verlauf.";
+                SettingsDownloadsSection.Visibility = Visibility.Visible;
+                SetSettingsNavActive(SettingsNavDownloads);
+                SettingsDownloadsSection.BringIntoView();
+                break;
+            case "addons":
+                SettingsPageTitle.Text = "ADDONS UND STORE";
+                SettingsPageSubtitle.Text = "Nova Addons, Store, ZIP-Import und Erweiterungsrechte.";
+                SettingsAddonsSection.Visibility = Visibility.Visible;
+                SetSettingsNavActive(SettingsNavAddons);
+                SettingsAddonsSection.BringIntoView();
+                break;
+            case "privacy":
+                SettingsPageTitle.Text = "DATENSCHUTZ UND MEDIEN";
+                SettingsPageSubtitle.Text = "Cookies, Cache, Medien-Diagnose und Webseiten-Berechtigungen.";
+                SettingsPrivacySection.Visibility = Visibility.Visible;
+                SetSettingsNavActive(SettingsNavPrivacy);
+                SettingsPrivacySection.BringIntoView();
+                break;
+            case "build":
+                SettingsPageTitle.Text = "UPDATE UND BUILD";
+                SettingsPageSubtitle.Text = "Version, Build-Zeit, Beta-Update und Zuruecksetzen.";
+                SettingsBuildSection.Visibility = Visibility.Visible;
+                SetSettingsNavActive(SettingsNavBuild);
+                SettingsBuildSection.BringIntoView();
+                break;
+            default:
+                SettingsPageTitle.Text = "DESIGN UND STARTSEITE";
+                SettingsPageSubtitle.Text = "Aussehen, Startseite und Nova-Oberflaeche.";
+                SettingsDesignSection.Visibility = Visibility.Visible;
+                SettingsStartSection.Visibility = Visibility.Visible;
+                SetSettingsNavActive(SettingsNavDesign);
+                SettingsDesignSection.BringIntoView();
+                break;
+        }
+    }
+
+    private void HideAllSettingsSections()
+    {
+        SettingsDesignSection.Visibility = Visibility.Collapsed;
+        SettingsSearchSection.Visibility = Visibility.Collapsed;
+        SettingsStartSection.Visibility = Visibility.Collapsed;
+        SettingsDownloadsSection.Visibility = Visibility.Collapsed;
+        SettingsAddonsSection.Visibility = Visibility.Collapsed;
+        SettingsPrivacySection.Visibility = Visibility.Collapsed;
+        SettingsBuildSection.Visibility = Visibility.Collapsed;
+    }
+
+    private void ResetSettingsNavState()
+    {
+        foreach (var nav in new[] { SettingsNavDesign, SettingsNavSearch, SettingsNavBookmarks, SettingsNavDownloads, SettingsNavAddons, SettingsNavPrivacy, SettingsNavBuild })
+        {
+            nav.Background = new SolidColorBrush(Color.FromRgb(18, 13, 25));
+        }
+    }
+
+    private static void SetSettingsNavActive(Border nav)
+    {
+        nav.Background = new SolidColorBrush(Color.FromRgb(37, 23, 56));
+    }
+
+    private void ThemeCardNovaNeon_Click(object sender, MouseButtonEventArgs e) => ApplyTheme("NovaNeon");
+    private void ThemeCardAurora_Click(object sender, MouseButtonEventArgs e) => ApplyTheme("Aurora");
+    private void ThemeCardFokus_Click(object sender, MouseButtonEventArgs e) => ApplyTheme("Fokus");
+    private void ThemeCardGlas_Click(object sender, MouseButtonEventArgs e) => ApplyTheme("Glas");
+
+    private void ApplyTheme(string theme)
+    {
+        NovaThemeService.Apply(theme, Resources);
+        _settingsService.Current.Theme = theme;
+        _settingsService.Save();
+        UpdateThemeCardStatus(theme);
+    }
+
+    private void UpdateThemeCardStatus(string theme)
+    {
+        ThemeStatusNovaNeon.Text = theme == "NovaNeon" ? "Aktiv" : "Neon";
+        ThemeStatusAurora.Text = theme == "Aurora" ? "Aktiv" : "Eisblau";
+        ThemeStatusFokus.Text = theme == "Fokus" ? "Aktiv" : "Ruhig";
+        ThemeStatusGlas.Text = theme == "Glas" ? "Aktiv" : "Panels";
+    }
 
     private void SettingsSearchBox_GotFocus(object sender, RoutedEventArgs e)
     {
@@ -3894,22 +4976,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         query = (query ?? "").Trim();
         if (string.IsNullOrEmpty(query) || query == "Einstellungen durchsuchen")
         {
-            SettingsDesignSection.Visibility = Visibility.Visible;
-            SettingsSearchSection.Visibility = Visibility.Visible;
-            SettingsStartSection.Visibility = Visibility.Visible;
-            SettingsAddonsSection.Visibility = Visibility.Visible;
-            SettingsPrivacySection.Visibility = Visibility.Visible;
-            SettingsBuildSection.Visibility = Visibility.Visible;
+            ShowSettingsCategory("design");
             return;
         }
+
+        SettingsPageTitle.Text = "SUCHERGEBNISSE";
+        SettingsPageSubtitle.Text = "Passende Einstellungsbereiche aus NyxNova.";
+        ResetSettingsNavState();
 
         bool Matches(string keywords) => keywords.Contains(query, StringComparison.OrdinalIgnoreCase);
 
         SettingsDesignSection.Visibility = Matches("Design Theme Nova Neon Aurora Fokus Glas Hintergrund") ? Visibility.Visible : Visibility.Collapsed;
         SettingsSearchSection.Visibility = Matches("Suche Suchmaschine Adressleiste Google DuckDuckGo Bing") ? Visibility.Visible : Visibility.Collapsed;
         SettingsStartSection.Visibility = Matches("Start und Oberflaeche Startseite Lesezeichenleiste") ? Visibility.Visible : Visibility.Collapsed;
+        SettingsDownloadsSection.Visibility = Matches("Downloads Download Datei Ordner Verlauf Fortschritt") ? Visibility.Visible : Visibility.Collapsed;
         SettingsAddonsSection.Visibility = Matches("Nova Addons Erweiterungen Store gepinnte Quick Links") ? Visibility.Visible : Visibility.Collapsed;
-        SettingsPrivacySection.Visibility = Matches("Datenschutz und Medien Cookies Cache LocalStorage WebSecurity Diagnose") ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPrivacySection.Visibility = Matches("Datenschutz und Medien Cookies Cache LocalStorage WebSecurity Diagnose Tracker Blocker HTTPS only Tab Ruhestand Hardware Beschleunigung Eco Mode Smart Session Restore Fingerprinting Automatischer Schutz") ? Visibility.Visible : Visibility.Collapsed;
         SettingsBuildSection.Visibility = Matches("Build und Beta Update Version") ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -4003,10 +5085,36 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             CloseActiveTab();
             e.Handled = true;
         }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
+                 Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) &&
+                 e.Key == Key.Tab)
+        {
+            SelectRelativeTab(-1);
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.Tab)
+        {
+            SelectRelativeTab(1);
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.PageUp)
+        {
+            SelectRelativeTab(-1);
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.PageDown)
+        {
+            SelectRelativeTab(1);
+            e.Handled = true;
+        }
         else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.L)
         {
-            AddressBox.Focus();
-            AddressBox.SelectAll();
+            FocusAddressBar();
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && (e.Key == Key.E || e.Key == Key.K))
+        {
+            FocusAddressBar();
             e.Handled = true;
         }
         else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.F)
@@ -4029,14 +5137,36 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             History_Click(sender, new RoutedEventArgs());
             e.Handled = true;
         }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
+                 Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) &&
+                 e.Key == Key.R)
+        {
+            ReloadWebTab(ignoreCache: true);
+            e.Handled = true;
+        }
         else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.R)
         {
             Reload_Click(sender, new RoutedEventArgs());
             e.Handled = true;
         }
+        else if (e.Key == Key.F5)
+        {
+            Reload_Click(sender, new RoutedEventArgs());
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.S)
+        {
+            SavePage_Click(sender, new RoutedEventArgs());
+            e.Handled = true;
+        }
         else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.P)
         {
             Print_Click(sender, new RoutedEventArgs());
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.OemComma)
+        {
+            Settings_Click(sender, new RoutedEventArgs());
             e.Handled = true;
         }
         else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.OemPlus)
@@ -4054,9 +5184,36 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ResetZoom();
             e.Handled = true;
         }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt) && e.Key == Key.Left)
+        {
+            Back_Click(sender, new RoutedEventArgs());
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt) && e.Key == Key.Right)
+        {
+            Forward_Click(sender, new RoutedEventArgs());
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt) && e.Key == Key.Home)
+        {
+            Home_Click(sender, new RoutedEventArgs());
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key >= Key.D1 && e.Key <= Key.D9)
+        {
+            SelectTabByShortcutIndex(e.Key - Key.D0);
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
+                 Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) &&
+                 e.Key == Key.I)
+        {
+            OpenDevTools_Click(sender, new RoutedEventArgs());
+            e.Handled = true;
+        }
         else if (e.Key == Key.F12)
         {
-            _activeTab?.Browser?.ShowDevTools();
+            OpenDevTools_Click(sender, new RoutedEventArgs());
             e.Handled = true;
         }
         else if (e.Key == Key.Escape)
@@ -4320,6 +5477,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // Klicks in einem offenen ComboBox-Dropdown landen in einem separaten Popup-Fenster,
+        // das nicht im Visualbaum des Panels liegt. Ohne diese Pruefung wuerde die Auswahl
+        // eines Dropdown-Eintrags als "Klick ausserhalb" gewertet und das Panel schliessen.
+        if (IsInsideType<System.Windows.Controls.ComboBoxItem>(source) ||
+            IsAnyPanelComboBoxDropDownOpen())
+        {
+            return;
+        }
+
         if (IsInsideAnyPopup(source) ||
             IsInsideElement(source, ExtensionsButton) ||
             IsInsideElement(source, BookmarkButton) ||
@@ -4327,6 +5493,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             IsInsideElement(source, DownloadsButton) ||
             IsInsideElement(source, DownloadButtonShell) ||
             IsInsideElement(source, AddressBarShell) ||
+            IsInsideElement(source, TelegramBotPanel) ||
+            IsInsideElement(source, TelegramBotButton) ||
             IsInsideElement(source, MainMenuButton) ||
             IsInsideElement(source, NewTabButton))
         {
@@ -4334,6 +5502,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         CloseTransientPanels();
+    }
+
+    private bool IsAnyPanelComboBoxDropDownOpen()
+    {
+        return TelegramBotModeBox?.IsDropDownOpen == true ||
+               TelegramBotChangeTypeBox?.IsDropDownOpen == true;
     }
 
     private void CloseTransientPanels(FrameworkElement? except = null)
@@ -4355,6 +5529,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                      ExtensionActionPopup,
                      BookmarkPopup,
                      HistorySidePanel,
+                     TelegramBotPanel,
                      DownloadsPopup,
                      OmniboxPopup
                  })
@@ -4809,22 +5984,45 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _activeDetailAddon = _addonService.Find(addonId);
         if (_activeDetailAddon is null)
         {
+            AddonDetailEyebrow.Text = "NICHT GEFUNDEN";
             AddonDetailName.Text = "Addon nicht gefunden";
             AddonDetailDescription.Text = "Dieses Addon existiert nicht im NovaStore.";
             AddonDetailInstallButton.Visibility = Visibility.Collapsed;
+            AddonDetailRatingChip.Text = "★ -";
+            AddonDetailStatusChip.Text = "Unbekannt";
+            AddonDetailVersion.Text = "-";
+            AddonDetailAuthor.Text = "-";
+            AddonDetailCategory.Text = "-";
+            AddonDetailRating.Text = "-";
+            AddonDetailScreenshots.ItemsSource = null;
+            AddonDetailPermissions.ItemsSource = null;
+            AddonDetailHosts.ItemsSource = null;
+            AddonDetailChangelog.Text = "";
             return;
         }
 
         AddonDetailInstallButton.Visibility = Visibility.Visible;
         AddonDetailIcon.Text = _activeDetailAddon.Icon;
+        AddonDetailEyebrow.Text = $"NOVA ADDON · {_activeDetailAddon.Category.ToUpperInvariant()}";
         AddonDetailName.Text = _activeDetailAddon.Name;
         AddonDetailDescription.Text = _activeDetailAddon.Description;
         AddonDetailInstallButton.Content = _activeDetailAddon.Installed ? "Entfernen" : "Installieren";
-        AddonDetailMeta.Text = $"Version {_activeDetailAddon.Version} | Autor: {_activeDetailAddon.Author} | Kategorie: {_activeDetailAddon.Category} | Bewertung {_activeDetailAddon.Rating:0.0}/5";
-        AddonDetailScreenshots.ItemsSource = _activeDetailAddon.Screenshots;
+
+        AddonDetailRatingChip.Text = $"★ {_activeDetailAddon.Rating:0.0}";
+        AddonDetailStatusChip.Text = _activeDetailAddon.Installed ? "Installiert" : "Verifiziert";
+        AddonDetailVersion.Text = _activeDetailAddon.Version;
+        AddonDetailAuthor.Text = _activeDetailAddon.Author;
+        AddonDetailCategory.Text = _activeDetailAddon.Category;
+        AddonDetailRating.Text = $"{_activeDetailAddon.Rating:0.0} / 5";
+
+        AddonDetailScreenshots.ItemsSource = _activeDetailAddon.Screenshots.Count == 0
+            ? new[] { "Vorschau folgt in Kuerze" }
+            : _activeDetailAddon.Screenshots;
         AddonDetailPermissions.ItemsSource = BuildPermissionLabels(_activeDetailAddon);
         AddonDetailHosts.ItemsSource = _activeDetailAddon.HostPermissions.Count == 0 ? new[] { "Keine Host-Berechtigungen" } : _activeDetailAddon.HostPermissions;
-        AddonDetailChangelog.Text = _activeDetailAddon.Changelog;
+        AddonDetailChangelog.Text = string.IsNullOrWhiteSpace(_activeDetailAddon.Changelog)
+            ? "Noch kein Changelog hinterlegt."
+            : _activeDetailAddon.Changelog;
     }
 
     private static List<string> BuildPermissionLabels(AddonItem item)
@@ -4926,6 +6124,35 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _settingsService.Save();
     }
 
+    private void PrivacySettingCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        _settingsService.Current.TrackerBlockerEnabled = TrackerBlockerCheckBox.IsChecked == true;
+        _settingsService.Current.AggressiveTrackerBlockerEnabled = AggressiveTrackerBlockerCheckBox.IsChecked == true;
+        _settingsService.Current.HttpsOnlyModeEnabled = HttpsOnlyModeCheckBox.IsChecked == true;
+        _settingsService.Current.TabSleepEnabled = TabSleepCheckBox.IsChecked == true;
+        _settingsService.Current.HardwareAccelerationEnabled = HardwareAccelerationCheckBox.IsChecked == true;
+        _settingsService.Current.EcoModeEnabled = EcoModeCheckBox.IsChecked == true;
+        _settingsService.Current.SmartSessionRestoreEnabled = SmartSessionRestoreCheckBox.IsChecked == true;
+        _settingsService.Current.GlobalFingerprintingProtectionEnabled = GlobalFingerprintingCheckBox.IsChecked == true;
+        _settingsService.Current.AutomaticProtectionEnabled = AutomaticProtectionCheckBox.IsChecked == true;
+        _settingsService.Current.DarkModeEnforcerEnabled = DarkModeEnforcerCheckBox.IsChecked == true;
+        _settingsService.Current.LazyMediaLoadingEnabled = LazyMediaLoadingCheckBox.IsChecked == true;
+        _settingsService.Save();
+
+        StatusText.Text = "Datenschutz- und Performance-Einstellungen gespeichert.";
+    }
+
+    private void ClearTrackerData_Click(object sender, RoutedEventArgs e)
+    {
+        ShowTrackerToast(0);
+        StatusText.Text = "Tracker-Blocker-Daten wurden zurueckgesetzt.";
+    }
+
     private void Window_Closing(object sender, CancelEventArgs e)
     {
         _isClosing = true;
@@ -4954,6 +6181,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private sealed class TelegramProbeData
+    {
+        public string? Url { get; set; }
+        public string? Title { get; set; }
+        public string? Text { get; set; }
+        public List<string>? Headings { get; set; }
+        public List<string>? Links { get; set; }
     }
 }
 

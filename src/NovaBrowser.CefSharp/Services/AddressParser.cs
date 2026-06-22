@@ -53,8 +53,9 @@ public static class AddressParser
         }
 
         var value = StripSuffix(url.Trim()).ToLowerInvariant();
-        return value is "nova://start" or "nova://settings" or "nova://history" or "nova://downloads" or "nova://diagnostics" or "nova://media-diagnostics" or "nova://extensions" or "nova://store" or "nova://update" or "nova://auth/callback" ||
-               value.StartsWith("nova://store/addon/", StringComparison.OrdinalIgnoreCase);
+        return value is "nova://start" or "nova://settings" or "nova://history" or "nova://downloads" or "nova://diagnostics" or "nova://media-diagnostics" or "nova://extensions" or "nova://store" or "nova://update" or "nova://auth/callback" or "nova://mods" or "nova://shaders" ||
+               value.StartsWith("nova://store/addon/", StringComparison.OrdinalIgnoreCase) ||
+               value.StartsWith("nova://settings/", StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsAuthCallbackUrl(string? url)
